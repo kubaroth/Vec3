@@ -9,9 +9,8 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"math"
 	"os"
-	"example.com/raytrace"
+	. "example.com/raytrace"
 )
 
 // Polymorphism example
@@ -33,34 +32,16 @@ func (b B) Hello() {
 	fmt.Println(b.x)
 }
 
-// Helper functions - promary advantage compared to gonum floats is the return value
-// which helps to write complex expressions
-func vec3_div(v []float64, x float64) []float64{
-	return []float64{v[0]/x, v[1]/x , v[2]/x}
-}
-func vec3_mul(v []float64, x float64) []float64{
-	return []float64{v[0]*x, v[1]*x , v[2]*x}
-}
-func vec3_length(v []float64) float64{
- 	return math.Sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]) 
-}
 
-func unit_vector(v []float64) []float64{
-	length := vec3_length(v)
-	return vec3_div(v, length)
-} 
+func ray_color(r Ray) color.RGBA {
+	unit_direction := r.Direction().UnitVec()
+	t := 0.5 * (unit_direction.At(1) + 1.0)
+	temp := NewVec3( 0.5, 0.7, 1.0 ).MultF(t)
+	temp = temp.Add(NewVec3(1,1,1).MultF(1-t))
+	temp = temp.MultF(255)  // NOTE: rember to shift range to 0-255
+	return color.RGBA{uint8(temp.At(0)), uint8(temp.At(1)), uint8(temp.At(2)), 255}
 
-
-func ray_color(r raytrace.Ray) color.RGBA {
-	unit_direction := unit_vector(r.Direction())
-	t := 0.5 * (unit_direction[1] + 1.0)
-	temp := []float64{ 0.5, 0.7, 1.0 }
-	floats.Mul(temp, []float64{ t, t, t })
-	temp2 := []float64{ 1, 1, 1 }
-	floats.Mul(temp2, []float64{ 1-t, 1-t, 1-t })
-	floats.Add(temp, temp2)
-	temp = vec3_mul(temp, 255) // NOTE: rember to shift range to 0-255
-	return color.RGBA{uint8(temp[0]), uint8(temp[1]), uint8(temp[2]), 255}
+	// return color.RGBA{1,1,1,255}
 	
 }
 
@@ -70,7 +51,7 @@ func main() {
 		i.Hello()
 	}
 
-	rr := raytrace.Ray{ []float64{0,0,0}, []float64{1,2,3} }
+	rr := NewRay(NewVec3(0,0,0), NewVec3(1,2,3))
 	_ = rr
 	
 	v1 := []float64{1, 3, -5}
@@ -95,18 +76,13 @@ func main() {
 	viewport_width := aspect_ratio *viewport_height
 	focal_length := 1.0; _ = focal_length
 
-	origin := []float64{0,0,0}
-	horizontal := []float64{float64(viewport_width), 0, 0}
-	vertical := []float64{0, float64(viewport_height), 0}
-	horizontal_2 := vec3_div(horizontal, 2)
-	vertical_2 := vec3_div(vertical, 2)
-	lower_left_corner := []float64{0,0,0}
-	floats.Add(lower_left_corner, origin)
-	floats.Sub(lower_left_corner, horizontal_2)
-	floats.Sub(lower_left_corner, vertical_2)
-	floats.Add(lower_left_corner, []float64{0,0,focal_length})
-	
-	
+	origin := NewVec3(0,0,0)
+	horizontal := NewVec3(viewport_width, 0,0)
+	vertical := NewVec3(0,viewport_height,0)
+
+	lower_left_corner := origin.Subtr(horizontal.DivF(2.0))
+	lower_left_corner = lower_left_corner.Subtr(vertical.DivF(2.0)).Add(NewVec3(0,0,focal_length))
+
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{width, height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
@@ -120,17 +96,14 @@ func main() {
 
 			u := float64(i) / float64(width - 1)
 			v := float64(j) / float64(height - 1)
-			dir := []float64{0,0,0}
-			floats.Add(dir, lower_left_corner)
-			floats.Add(dir, vec3_mul(horizontal, u))
-			floats.Add(dir, vec3_mul(horizontal, v))
-			floats.Sub(dir, origin)
-			ray := raytrace.Ray{origin, dir} ; _ = ray
-			//fmt.Println("ray", ray)
+
+			dir :=         lower_left_corner.Add(	horizontal.MultF(u)).Add(
+vertical.MultF(v)).Subtr(origin)
+			ray := NewRay(origin, dir);
+			// fmt.Println("ray", ray)
 			cd := ray_color(ray)
-			// fmt.Println(cd)
+			// fmt.Println(i, j)
 			img.SetRGBA(i, j, cd)
-			
 		}
 	}
 
@@ -139,4 +112,7 @@ func main() {
 		fmt.Printf("failed to encode: %v", err)
 	}
 
+
+
+	fmt.Println(1/3.)
 }
