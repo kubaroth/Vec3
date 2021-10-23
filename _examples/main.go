@@ -104,7 +104,7 @@ func main() {
 		for i := 0; i < width; i++ {
 			// r = uint8(255 * float64(i) / float64(width-1))
 			// g = uint8(255 * float64(j) / float64(height))
-			//img.SetRGBA(i, j, color.RGBA{r, g, 0, 255})
+			// img.SetRGBA(i, height-j, color.RGBA{r, g, 0, 255})
 
 			u := float64(i) / float64(width-1)
 			v := float64(j) / float64(height-1)
