@@ -150,5 +150,4 @@ func main() {
 		fmt.Printf("failed to encode: %v", err)
 	}
 
-	fmt.Println(1 / 3.)
 }
