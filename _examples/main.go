@@ -41,8 +41,8 @@ func (b B) Hello() {
 	fmt.Println(b.x)
 }
 
-func hit_sphere(center Vec3, radius float32, r Ray) bool {
-	oc := r.Origin().Subtr(center)
+func hit_sphere(center *Vec3, radius float32, r *Ray) bool {
+	oc := r.Origin().Subtr(*center)
 	a := r.Direction().Dot(r.Direction())
 	b := oc.Dot(r.Direction()) * 2.0
 	c := oc.Dot(oc) - (radius * radius)
@@ -51,8 +51,9 @@ func hit_sphere(center Vec3, radius float32, r Ray) bool {
 
 }
 
-func ray_color(r Ray) color.RGBA {
-	if hit_sphere(NewVec3(0, 0, -1), 0.5, r) {
+func ray_color(r *Ray) color.RGBA {
+	aa := NewVec3(0, 0, -1)
+	if hit_sphere(&aa, 0.5, r) {
 		return color.RGBA{255, 0, 0, 255}
 	}
 
@@ -137,7 +138,7 @@ func main() {
 				vertical.MultF(v)).Subtr(origin)
 			ray := NewRay(origin, dir)
 			// fmt.Println("ray", ray)
-			cd := ray_color(ray)
+			cd := ray_color(&ray)
 			// fmt.Println(i, j)
 			img.SetRGBA(i, j, cd)
 		}
