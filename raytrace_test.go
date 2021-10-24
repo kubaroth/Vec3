@@ -2,16 +2,14 @@ package raytrace
 
 import (
 	_ "fmt"
-	"gonum.org/v1/gonum/floats"
 	"testing"
 )
 
 func TestRay1(t *testing.T) {
-	r := Ray{[]float64{0, 0, 0}, []float64{1, 2, 3}}
-	vec := r.At(2)
-	want := []float64{2, 4, 6}
-	if !floats.Same(vec, want) {
-		t.Errorf(" %v != %v", vec, want)
+	r := Ray{NewVec3(0, 0, 0), NewVec3(1, 2, 3)}
+	want := 2.0
+	if r.Dir.At(1) != want {
+		t.Errorf(" %v != %v", r.Dir.At(2), want)
 	}
 
 }
@@ -113,13 +111,6 @@ func TestVecOther(t *testing.T) {
 	want = 29.0
 	res = vec.LengthSquared()
 	if res != want {
-		t.Errorf(" %v != %v", res, want)
-	}
-
-	vec = Vec3{[3]float64{3, 3, 3}}
-	want = Vec3{[3]float64{1, 1, 1}}
-	res = vec.Div(vec)
-	if !res.Equal(want) {
 		t.Errorf(" %v != %v", res, want)
 	}
 

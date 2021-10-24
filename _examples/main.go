@@ -1,5 +1,11 @@
 // A driver test program
 // to debu: go build -gcflags="all=-N -l" main.go
+//
+// Profiling:
+// $ go build
+// $ ./_examples -cpuprofile aaa
+// $ go tool pprof aaa
+// (pprof) top 10
 
 package main
 
@@ -11,6 +17,9 @@ import (
 	"image/color"
 	"image/png"
 	"os"
+	"time"
+	"flag"
+	"runtime/pprof"
 )
 
 // Polymorphism example
@@ -56,7 +65,20 @@ func ray_color(r Ray) color.RGBA {
 
 }
 
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
 func main() {
+	flag.Parse()
+    if *cpuprofile != "" {
+        f, err := os.Create(*cpuprofile)
+        if err != nil {
+            fmt.Println(err)
+        }
+        pprof.StartCPUProfile(f)
+        defer pprof.StopCPUProfile()
+    }
+
+	
 	a := []Mesh{A{1}, B{2}, A{3}}
 	for _, i := range a {
 		i.Hello()
@@ -79,9 +101,10 @@ func main() {
 
 	//Image
 	aspect_ratio := 16.0 / 9.0
-	width := 200
+	width := 2000
 	height := int(float64(width) / aspect_ratio)
-
+	fmt.Printf("image res", width, height)
+	
 	// Camera
 	viewport_height := 2.0
 	viewport_width := aspect_ratio * viewport_height
@@ -99,6 +122,7 @@ func main() {
 	lowRight := image.Point{width, height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
+	start := time.Now()
 	// var r, g uint8
 	for j := height - 1; j >= 0; j-- {
 		for i := 0; i < width; i++ {
@@ -118,6 +142,8 @@ func main() {
 			img.SetRGBA(i, j, cd)
 		}
 	}
+
+	fmt.Println("time", time.Since(start))
 
 	defer f.Close()
 	if err = png.Encode(f, img); err != nil {

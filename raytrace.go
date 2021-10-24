@@ -26,10 +26,15 @@ func (v Vec3) Equal(v1 Vec3) bool {
 }
 
 func (v Vec3) Add(v1 Vec3) Vec3 {
-	return NewVec3(v.At(0)+v1.At(0), v.At(1)+v1.At(1), v.At(2)+v1.At(2))
+	//return NewVec3(v.At(0)+v1.At(0), v.At(1)+v1.At(1), v.At(2)+v1.At(2))
+	// optimization
+	v.e[0] = v.e[0]+v1.e[0]
+	v.e[1] = v.e[1]+v1.e[1]
+	v.e[2] = v.e[2]+v1.e[2]
+	return v
 }
 func (v Vec3) AddF(x float64) Vec3 {
-	return NewVec3(v.At(0)+x, v.At(1)+x, v.At(2)+x)
+	return NewVec3(v.e[0]+x, v.e[1]+x, v.e[2]+x)
 }
 func (v Vec3) Subtr(v1 Vec3) Vec3 {
 	return NewVec3(v.At(0)-v1.At(0), v.At(1)-v1.At(1), v.At(2)-v1.At(2))
@@ -61,7 +66,7 @@ func (v Vec3) UnitVec() Vec3 {
 	return v.DivF(v.Length())
 }
 func (v Vec3) Dot(v1 Vec3) float64 {
-	return v.At(0)*v1.At(0) + v.At(1)*v1.At(1) + v.At(2)*v1.At(2)
+	return v.e[0]*v1.e[0] + v.e[1]*v1.e[1] + v.e[2]*v1.e[2]
 }
 func (v Vec3) Cross(u Vec3) Vec3 {
 	return NewVec3(
