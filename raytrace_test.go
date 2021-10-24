@@ -7,7 +7,7 @@ import (
 
 func TestRay1(t *testing.T) {
 	r := Ray{NewVec3(0, 0, 0), NewVec3(1, 2, 3)}
-	want := 2.0
+	want := float32(2.0)
 	if r.Dir.At(1) != want {
 		t.Errorf(" %v != %v", r.Dir.At(2), want)
 	}
@@ -16,15 +16,15 @@ func TestRay1(t *testing.T) {
 
 func TestVecIndexAccesso(t *testing.T) {
 	vec := NewVec3(1, 2, 3)
-	want := 1.0
+	want := float32(1.0)
 	if vec.At(0) != (want) {
 		t.Errorf(" %v != %v", vec.At(0), want)
 	}
-	want = 2.0
+	want = float32(2.0)
 	if vec.At(1) != (want) {
 		t.Errorf(" %v != %v", vec.At(1), want)
 	}
-	want = 3.0
+	want = float32(3.0)
 	if vec.At(2) != (want) {
 		t.Errorf(" %v != %v", vec.At(2), want)
 	}
@@ -92,7 +92,7 @@ func TestVecAdd(t *testing.T) {
 	}
 
 	want = NewVec3(2, 3, 4)
-	res = vec.DivF(2)
+	res = vec.DivF(float32(2))
 	if !res.Equal(want) {
 		t.Errorf(" %v != %v", res, want)
 	}
@@ -101,14 +101,14 @@ func TestVecAdd(t *testing.T) {
 
 func TestVecOther(t *testing.T) {
 	vec := NewVec3(0, 3, 4)
-	want := 5.0
+	want := float32(5.0)
 	res := vec.Length()
 	if res != want {
 		t.Errorf(" %v != %v", res, want)
 	}
 
 	vec = NewVec3(2, 3, 4)
-	want = 29.0
+	want = float32(29.0)
 	res = vec.LengthSquared()
 	if res != want {
 		t.Errorf(" %v != %v", res, want)
