@@ -60,8 +60,6 @@ func hit_sphere(center *Vec3, radius float32, r *Ray) float64 {
 	if discriminant < 0{
 		return -1.0
 	} else {
-		// fmt.Printf(" %v", discriminant)
-		fmt.Println(discriminant, b, a)
 		return float64(-b - float32(math.Sqrt(discriminant))) / (2.0 * float64(a))
 	}
 
@@ -70,11 +68,9 @@ func hit_sphere(center *Vec3, radius float32, r *Ray) float64 {
 func ray_color(r *Ray) color.RGBA {
 	aa := NewVec3(0, 0, -1)
 	t := float32(hit_sphere(&aa, 0.5, r))
-	// fmt.Printf(" %v", t)
 	if t > 0 {
 		N := r.At(float32(t)).Subtr( NewVec3(0,0,-1) )
-		// N = N.UnitVec()
-		// fmt.Printf(" %v", N)
+		N = N.UnitVec()
 		R := (N.At(0) + 1) * 0.5
 		G := (N.At(1) + 1) * 0.5
 		B := (N.At(2) + 1) * 0.5
@@ -143,7 +139,7 @@ func main() {
 
 	lower_left_corner := origin.Subtr(horizontal.DivF(2.0))
 	llc := lower_left_corner.Subtr(vertical.DivF(2.0))
-	llc = llc.Add(NewVec3(0, 0, float32(focal_length)))
+	llc = llc.Subtr(NewVec3(0, 0, float32(focal_length)))
 
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{width, height}
@@ -166,11 +162,11 @@ func main() {
 			dir = dir.Add(v_vert)
 			dir = dir.Subtr(origin)
 			
-			ray := NewRay(origin, dir.MultF(-1))  // need to negate ray direction?
+			ray := NewRay(origin, dir)
 			// fmt.Println("ray", ray)
 			cd := ray_color(&ray)
 			// fmt.Println(i, j)
-			img.SetRGBA(width-i, j, cd) // with negate ray dir - no need to flip verticlya but horizontally
+			img.SetRGBA(i, height-j, cd)
 		}
 	}
 
