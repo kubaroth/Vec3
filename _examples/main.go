@@ -16,6 +16,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"math"
 	"os"
 	"time"
 	"flag"
@@ -50,28 +51,43 @@ func (b B) Hello() {
 //      --a---       -----b-----   ------c--------
 
 
-func hit_sphere(center *Vec3, radius float32, r *Ray) bool {
+func hit_sphere(center *Vec3, radius float32, r *Ray) float64 {
 	oc := r.Origin().Subtr(*center)
 	a := r.Direction().Dot(r.Direction()) 
-	b := r.Direction().Dot(oc) * 2.0
+	b := oc.Dot(r.Direction()) * 2.0
 	c := oc.Dot(oc) - (radius * radius)
-	discriminant := b*b - 4*a*c // finding roots
-	return discriminant > 0
+	discriminant := float64(b*b - 4*a*c) // finding roots
+	if discriminant < 0{
+		return -1.0
+	} else {
+		// fmt.Printf(" %v", discriminant)
+		fmt.Println(discriminant, b, a)
+		return float64(-b - float32(math.Sqrt(discriminant))) / (2.0 * float64(a))
+	}
 
 }
 
 func ray_color(r *Ray) color.RGBA {
 	aa := NewVec3(0, 0, -1)
-	if hit_sphere(&aa, 0.5, r) {
-		return color.RGBA{255, 0, 0, 255}
+	t := float32(hit_sphere(&aa, 0.5, r))
+	// fmt.Printf(" %v", t)
+	if t > 0 {
+		N := r.At(float32(t)).Subtr( NewVec3(0,0,-1) )
+		// N = N.UnitVec()
+		// fmt.Printf(" %v", N)
+		R := (N.At(0) + 1) * 0.5
+		G := (N.At(1) + 1) * 0.5
+		B := (N.At(2) + 1) * 0.5
+		return color.RGBA{uint8(R*255), uint8(G*255), uint8(B*255), 255}
 	}
 
 	unit_direction := r.Direction().UnitVec()
-	t := 0.5 * (unit_direction.At(1) + 1.0)
-	temp := NewVec3(0.5, 0.7, 1.0).MultF(t)
-	temp = temp.Add(NewVec3(1, 1, 1).MultF(1 - t))
-	temp = temp.MultF(255) // NOTE: rember to shift range to 0-255
-	return color.RGBA{uint8(temp.At(0)), uint8(temp.At(1)), uint8(temp.At(2)), 255}
+	t = float32(0.5 * (unit_direction.At(1) + 1.0))
+	sky := NewVec3(0.5, 0.7, 1.0).MultF(t)
+	sky = sky.Add(NewVec3(1, 1, 1).MultF(1 - t))
+	sky = sky.MultF(255) // NOTE: rember to shift range to 0-255
+	return color.RGBA{uint8(sky.At(0)), uint8(sky.At(1)), uint8(sky.At(2)), 255}
+	
 
 }
 
@@ -111,7 +127,7 @@ func main() {
 
 	//Image
 	aspect_ratio := 16.0 / 9.0
-	width := 2000
+	width := 200
 	height := int(float64(width) / aspect_ratio)
 	fmt.Printf("image res", width, height)
 	
@@ -150,11 +166,11 @@ func main() {
 			dir = dir.Add(v_vert)
 			dir = dir.Subtr(origin)
 			
-			ray := NewRay(origin, dir)
+			ray := NewRay(origin, dir.MultF(-1))  // need to negate ray direction?
 			// fmt.Println("ray", ray)
 			cd := ray_color(&ray)
 			// fmt.Println(i, j)
-			img.SetRGBA(i, height-j, cd)
+			img.SetRGBA(width-i, j, cd) // with negate ray dir - no need to flip verticlya but horizontally
 		}
 	}
 
