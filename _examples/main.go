@@ -41,12 +41,21 @@ func (b B) Hello() {
 	fmt.Println(b.x)
 }
 
+// Equation of sphere in vector form
+// (P - C) dot (P - C) = r**2
+// (A + tb - C) dot (A + tb - C) = r**2
+// A + tb is a Ray
+// quadratic equation x**2 + x + 1 =0 where t is unkown
+// t**2 b dot b + 2t b dot (A-C) + (A-C) dot(A-C) - r**2 = 0
+//      --a---       -----b-----   ------c--------
+
+
 func hit_sphere(center *Vec3, radius float32, r *Ray) bool {
 	oc := r.Origin().Subtr(*center)
-	a := r.Direction().Dot(r.Direction())
-	b := oc.Dot(r.Direction()) * 2.0
+	a := r.Direction().Dot(r.Direction()) 
+	b := r.Direction().Dot(oc) * 2.0
 	c := oc.Dot(oc) - (radius * radius)
-	discriminant := b*b - a*c*4
+	discriminant := b*b - 4*a*c // finding roots
 	return discriminant > 0
 
 }
@@ -126,7 +135,7 @@ func main() {
 
 	start := time.Now()
 	// var r, g uint8
-	for j := height - 1; j >= 0; j-- {
+	for j := 0; j < height; j++ {
 		for i := 0; i < width; i++ {
 			// r = uint8(255 * float64(i) / float64(width-1))
 			// g = uint8(255 * float64(j) / float64(height))
@@ -145,7 +154,7 @@ func main() {
 			// fmt.Println("ray", ray)
 			cd := ray_color(&ray)
 			// fmt.Println(i, j)
-			img.SetRGBA(i, j, cd)
+			img.SetRGBA(i, height-j, cd)
 		}
 	}
 
