@@ -117,7 +117,8 @@ func main() {
 	vertical := NewVec3(0, float32(viewport_height), 0)
 
 	lower_left_corner := origin.Subtr(horizontal.DivF(2.0))
-	lower_left_corner = lower_left_corner.Subtr(vertical.DivF(2.0)).Add(NewVec3(0, 0, float32(focal_length)))
+	llc := lower_left_corner.Subtr(vertical.DivF(2.0))
+	llc = llc.Add(NewVec3(0, 0, float32(focal_length)))
 
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{width, height}
@@ -134,8 +135,12 @@ func main() {
 			u := float32(i) / float32(width-1)
 			v := float32(j) / float32(height-1)
 
-			dir := lower_left_corner.Add(horizontal.MultF(u)).Add(
-				vertical.MultF(v)).Subtr(origin)
+			u_horiz := horizontal.MultF(u)
+			v_vert := vertical.MultF(v)
+			dir := llc.Add(u_horiz)
+			dir = dir.Add(v_vert)
+			dir = dir.Subtr(origin)
+			
 			ray := NewRay(origin, dir)
 			// fmt.Println("ray", ray)
 			cd := ray_color(&ray)
