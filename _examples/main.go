@@ -51,19 +51,14 @@ func (b B) Hello() {
 //      --a---       -----b-----   ------c--------
 func hit_sphere(center *Vec3, radius float32, r *Ray) float64 {
 	oc := r.Origin().Subtr(*center)
-	//a := r.Direction().Dot(r.Direction())
-	a := r.Direction().LengthSquared()
-	// b := oc.Dot(r.Direction()) * 2.0
-	half_b := oc.Dot(r.Direction())
-	// c := oc.Dot(oc) - (radius * radius)
-	c := oc.LengthSquared() - (radius * radius)
-	// discriminant := float64(b*b - 4*a*c) // finding roots
-	discriminant := float64(half_b*half_b - a*c) // finding roots
+	a := r.Direction().Dot(r.Direction())
+	b := oc.Dot(r.Direction()) * 2.0
+	c := oc.Dot(oc) - (radius * radius)
+	discriminant := float64(b*b - 4*a*c) // finding roots
 	if discriminant < 0{
 		return -1.0
 	} else {
-		// return float64(-b - float32(math.Sqrt(discriminant))) / (2.0 * float64(a))
-		return float64(-half_b - float32(math.Sqrt(discriminant))) / (float64(a))
+		return float64(-b - float32(math.Sqrt(discriminant))) / (2.0 * float64(a))
 	}
 
 }
@@ -126,7 +121,7 @@ func main() {
 
 	//Image
 	aspect_ratio := 16.0 / 9.0
-	width := 200
+	width := 2000
 	height := int(float64(width) / aspect_ratio)
 	fmt.Printf("image res", width, height)
 	
