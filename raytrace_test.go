@@ -115,7 +115,12 @@ func TestVecOther(t *testing.T) {
 	}
 
 	// Dot product
-
+	vec1 := NewVec3(2, 3, 4)
+	vec2 := NewVec3(2, 3, 4)
+	if vec1.Dot(vec2) != vec2.LengthSquared(){
+		t.Errorf(" %v != %v", vec1, vec2)
+	}
+	
 	// Cross product
 
 }
