@@ -12,7 +12,6 @@ package main
 import (
 	. "example.com/raytrace"
 	"fmt"
-	"gonum.org/v1/gonum/floats"
 	"image"
 	"image/color"
 	"image/png"
@@ -23,23 +22,58 @@ import (
 	"runtime/pprof"
 )
 
+type HitRecord struct {
+	P, Normal Vec3 // point and normal
+	T float32
+	
+}
+
 // Polymorphism example
-type A struct {
-	x int
+type Sphere struct {
+	Center Vec3
+	Radius float32
 }
 type B struct {
 	x float64
 }
 
-type Mesh interface {
-	Hello()
+type Hittable interface {
+	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool
 }
 
-func (a A) Hello() {
-	fmt.Println(a.x)
+func (s Sphere) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
+	fmt.Println("A")
+
+	oc := r.Origin().Subtr(s.Center)
+	a := r.Direction().Dot(r.Direction())
+	half_b := oc.Dot(r.Direction())
+	c := oc.Dot(oc) - (s.Radius * s.Radius)
+	discriminant := float64(half_b * half_b - a*c) // finding roots
+	if discriminant < 0{
+		return false
+	} else {
+		// return float64(-half_b - float32(math.Sqrt(discriminant))) / (float64(a))
+		// return true
+	}
+    // Find the nearest root that lies in the acceptable range.
+	sqrtd := float32(math.Sqrt(discriminant))
+	root := (-half_b - sqrtd) / a
+	if (root < t_min || t_max < root) {
+        root = (-half_b + sqrtd) / a
+        if (root < t_min || t_max < root) {
+            return false
+		}
+    }
+	
+    rec.T = root;
+    rec.P = r.At(rec.T);
+    rec.Normal = (rec.P.Subtr(s.Center)).DivF(s.Radius)
+	return true;
 }
-func (b B) Hello() {
-	fmt.Println(b.x)
+
+func (b B) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool{
+	fmt.Println("B")
+	return true
 }
 
 // Equation of sphere in vector form
@@ -52,13 +86,13 @@ func (b B) Hello() {
 func hit_sphere(center *Vec3, radius float32, r *Ray) float64 {
 	oc := r.Origin().Subtr(*center)
 	a := r.Direction().Dot(r.Direction())
-	b := oc.Dot(r.Direction()) * 2.0
+	half_b := oc.Dot(r.Direction())
 	c := oc.Dot(oc) - (radius * radius)
-	discriminant := float64(b*b - 4*a*c) // finding roots
+	discriminant := float64(half_b * half_b - a*c) // finding roots
 	if discriminant < 0{
 		return -1.0
 	} else {
-		return float64(-b - float32(math.Sqrt(discriminant))) / (2.0 * float64(a))
+		return float64(-half_b - float32(math.Sqrt(discriminant))) / (float64(a))
 	}
 
 }
@@ -98,18 +132,12 @@ func main() {
         defer pprof.StopCPUProfile()
     }
 
-	
-	a := []Mesh{A{1}, B{2}, A{3}}
+	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0}
+	ray := NewRay(NewVec3(0,0,0), NewVec3(0,0,0))
+	a := []Hittable{Sphere{NewVec3(0,0,0), 1.0}, B{2}, Sphere{NewVec3(1,1,1), 0.5}}
 	for _, i := range a {
-		i.Hello()
+		i.Hit(&ray, 0, 1, &rec)
 	}
-
-	rr := NewRay(NewVec3(0, 0, 0), NewVec3(1, 2, 3))
-	_ = rr
-
-	v1 := []float64{1, 3, -5}
-	v2 := []float64{4, -2, -1}
-	fmt.Println(floats.Dot(v1, v2))
 
 	path := os.Getenv("HOME") + "/storage/downloads/img.png"
 	fmt.Println("saving into:", path)
