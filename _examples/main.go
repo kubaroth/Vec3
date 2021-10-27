@@ -28,7 +28,6 @@ type HitRecord struct {
 	FrontFace bool
 }
 
-// Polymorphism example
 type Sphere struct {
 	Center Vec3
 	Radius float32
@@ -41,6 +40,13 @@ type Hittable interface {
 	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool
 }
 
+// Equation of sphere in vector form
+// (P - C) dot (P - C) = r**2
+// (A + tb - C) dot (A + tb - C) = r**2
+// A + tb is a Ray
+// quadratic equation x**2 + x + 1 =0 where t is unkown
+// t**2 b dot b + 2t b dot (A-C) + (A-C) dot(A-C) - r**2 = 0
+//      --a---       -----b-----   ------c--------
 func (s Sphere) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
 	oc := r.Origin().Subtr(s.Center)
 	a := r.Direction().Dot(r.Direction())
@@ -49,9 +55,6 @@ func (s Sphere) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
 	discriminant := float64(half_b * half_b - a*c) // finding roots
 	if discriminant < 0{
 		return false
-	} else {
-		// return float64(-half_b - float32(math.Sqrt(discriminant))) / (float64(a))
-		// return true
 	}
     // Find the nearest root that lies in the acceptable range.
 	sqrtd := float32(math.Sqrt(discriminant))
@@ -62,72 +65,31 @@ func (s Sphere) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
             return false
 		}
     }
-	// fmt.Println("rootNew", root)
     rec.T = root;
-    rec.P = r.At(rec.T);
-	// fmt.Println("P New", rec.P.Subtr(s.Center), r.At(root).Subtr(s.Center), root, s.Center)
-    // rec.Normal = (rec.P.Subtr(s.Center)).DivF(s.Radius)
+    rec.P = r.At(rec.T); // hit point at sphere
     outward_normal := (rec.P.Subtr(s.Center)).DivF(s.Radius)
-	// rec.Normal = (rec.P.Subtr(s.Center))
-	// outward_normal := (rec.P.Subtr(s.Center))
     rec.set_face_normal(r, &outward_normal)
-	
 	return true;
 }
 
 func (rec *HitRecord) set_face_normal(r *Ray, outward_normal * Vec3) {
-	if r.Direction().Dot(*outward_normal) < 0{ // TODO: this may reqiure flip
+	if r.Direction().Dot(*outward_normal) < 0 {
 		rec.Normal = *outward_normal
 		rec.FrontFace = true
 	} else {
 		rec.Normal = NewVec3(-outward_normal.At(0), -outward_normal.At(1), -outward_normal.At(2))
 		rec.FrontFace = false
 	}
-	//normal = front_face ? outward_normal :-outward_normal;
 }
-
 
 func (b B) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool{
 	fmt.Println("B")
 	return true
 }
 
-// Equation of sphere in vector form
-// (P - C) dot (P - C) = r**2
-// (A + tb - C) dot (A + tb - C) = r**2
-// A + tb is a Ray
-// quadratic equation x**2 + x + 1 =0 where t is unkown
-// t**2 b dot b + 2t b dot (A-C) + (A-C) dot(A-C) - r**2 = 0
-//      --a---       -----b-----   ------c--------
-func hit_sphere(center *Vec3, radius float32, r *Ray) float64 {
-	oc := r.Origin().Subtr(*center)
-	a := r.Direction().Dot(r.Direction())
-	half_b := oc.Dot(r.Direction())
-	c := oc.Dot(oc) - (radius * radius)
-	discriminant := float64(half_b * half_b - a*c) // finding roots
-	if discriminant < 0{
-		return -1.0
-	} else {
-		root := float64(-half_b - float32(math.Sqrt(discriminant))) / (float64(a)) 
-		fmt.Println("root_old", root)
-		return root
-	}
-
-}
-
 func ray_color(r *Ray, sphere *Sphere) color.RGBA {
-
-
-	aa := NewVec3(0, 0, -1)
-	root := float32(hit_sphere(&aa, 0.5, r))
-	if root > 0 {
-		aa = r.At(float32(root)).Subtr( NewVec3(0,0,-1) )
-		// fmt.Println("P Old", r.At(float32(root)), aa, root, NewVec3(0,0,-1))
-		// aa = aa.UnitVec()
-	}
-	
 	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true}
-	hit := sphere.Hit(r, 0.0, 100000, &rec)
+	hit := sphere.Hit(r, 0.0, 100000, &rec) // this will populate HitRecord
 	
 	if hit { 
 		N := (rec.Normal.Add(NewVec3(1,1,1))).MultF(float32(0.5))
@@ -135,47 +97,15 @@ func ray_color(r *Ray, sphere *Sphere) color.RGBA {
 		R := N.At(0)
 		G := N.At(1)
 		B := N.At(2)
-
-		// N := rec.Normal.UnitVec()
-		// R := (N.At(0) + 1) * 0.5
-		// G := (N.At(1) + 1) * 0.5
-		// B := (N.At(2) + 1) * 0.5
-		
-	return color.RGBA{uint8(R*255), uint8(G*255), uint8(B*255), 255}
-		
-	}
-	/*
-
-	   hit_record rec;
-    if (world.hit(r, 0, infinity, rec)) {
-        return 0.5 * (rec.normal + color(1,1,1));
-    }
-    vec3 unit_direction = unit_vector(r.direction());
-    auto t = 0.5*(unit_direction.y() + 1.0);
-    return (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0);
-	
-	aa := NewVec3(0, 0, -1)
-	t := float32(hit_sphere(&aa, 0.5, r))
-	if t > 0 {
-		N := r.At(float32(t)).Subtr( NewVec3(0,0,-1) )
-		N = N.UnitVec()
-		R := (N.At(0) + 1) * 0.5
-		G := (N.At(1) + 1) * 0.5
-		B := (N.At(2) + 1) * 0.5
 		return color.RGBA{uint8(R*255), uint8(G*255), uint8(B*255), 255}
 	}
-	*/
-
-	
-
+	// Background
 	unit_direction := r.Direction().UnitVec()
 	t := float32(0.5 * (unit_direction.At(1) + 1.0))
 	sky := NewVec3(0.5, 0.7, 1.0).MultF(t)
 	sky = sky.Add(NewVec3(1, 1, 1).MultF(1 - t))
 	sky = sky.MultF(255) // NOTE: rember to shift range to 0-255
 	return color.RGBA{uint8(sky.At(0)), uint8(sky.At(1)), uint8(sky.At(2)), 255}
-
-
 }
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
