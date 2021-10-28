@@ -26,6 +26,7 @@ type HitRecord struct {
 	P, Normal Vec3 // point and normal
 	T float32
 	FrontFace bool
+	ObjectId int // default -1 : helper to determine which object was hit by a ray
 }
 
 type Sphere struct {
@@ -87,11 +88,24 @@ func (b B) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool{
 	return true
 }
 
-func ray_color(r *Ray, sphere *Sphere) color.RGBA {
-	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true}
-	hit := sphere.Hit(r, 0.0, 100000, &rec) // this will populate HitRecord
-	
-	if hit { 
+func ray_color(r *Ray, objects []Hittable) color.RGBA {
+	// Iteration over the list of objects can me moved into a separate type
+	// class in c++ HittableList (the world) but we leave it here for clarity
+	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true, -1}
+	hit:= false
+	closest_so_far := float32(math.Inf(1.0))
+	for obj_id, object := range objects {
+		// NOTE: we don't update hit var in here but inside the if block.
+		// With a ray intersecting multiple objects the second object
+		// (which can be furhter) will return False as the closest_so_far criteria no longer is met
+		hit_object := object.Hit(r, 0.0, float32(closest_so_far), &rec) // this will populate HitRecord
+		if hit_object{
+			closest_so_far = rec.T
+			hit = true
+			rec.ObjectId = obj_id
+		}
+	}
+	if hit {
 		N := (rec.Normal.Add(NewVec3(1,1,1))).MultF(float32(0.5))
 		// N = N.UnitVec()
 		R := N.At(0)
@@ -121,15 +135,12 @@ func main() {
         defer pprof.StopCPUProfile()
     }
 
-	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true}
-	ray := NewRay(NewVec3(0,0,0), NewVec3(0,0,0))
-	a := []Hittable{Sphere{NewVec3(0,0,0), 1.0}, B{2}, Sphere{NewVec3(1,1,1), 0.5}}
-	for _, i := range a {
-		i.Hit(&ray, 0, 1, &rec)
-	}
-
-	sphere := Sphere{NewVec3(0,0,-1), 0.5}
 	
+	// The slice of types implements Hittable interface (HittableList in c++)n
+	world := []Hittable{
+		Sphere{NewVec3(0,0,-1), 0.5},
+		Sphere{NewVec3(0,-100.5,-1), 100.0}}
+
 	path := os.Getenv("HOME") + "/storage/downloads/img.png"
 	fmt.Println("saving into:", path)
 
@@ -181,7 +192,7 @@ func main() {
 			
 			ray := NewRay(origin, dir)
 			// fmt.Println("ray", ray)
-			cd := ray_color(&ray, &sphere)
+			cd := ray_color(&ray, world)
 			// fmt.Println(i, j)
 			img.SetRGBA(i, height-j, cd)
 		}
