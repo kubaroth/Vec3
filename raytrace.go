@@ -4,6 +4,10 @@ import (
 	"math"
 )
 
+func Deg_to_Rad(deg float64) float64 {
+	return deg * math.Pi / 180.0
+}
+
 // Vec3
 type Vec3 struct {
 	// e [3]float32
