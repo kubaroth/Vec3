@@ -10,7 +10,7 @@
 package main
 
 import (
-	. "example.com/raytrace"
+	. "github.com/kubaroth/Vec3"
 	"fmt"
 	"image"
 	"image/color"

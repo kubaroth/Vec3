@@ -1,5 +1,3 @@
-module example.com/raytrace
+module github.com/kubaroth/Vec3
 
 go 1.16
-
-require gonum.org/v1/gonum v0.9.3
