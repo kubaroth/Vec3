@@ -94,23 +94,18 @@ func ray_color(r *Ray, objects []Hittable) color.RGBA {
 	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true, -1}
 	hit:= false
 	closest_so_far := float32(math.Inf(1.0))
-
-	s1:= Sphere{NewVec3(0,0,-1), 0.5}
-	s2:= Sphere{NewVec3(0,-100.5,-1), 100.0}
-	hit = s1.Hit(r, 0.0, float32(closest_so_far), &rec) // half the time comapred
-	hit = s2.Hit(r, 0.0, float32(closest_so_far), &rec) // to for range
 	
-	// for obj_id, object := range objects {
-	// 	// NOTE: we don't update hit var in here but inside the if block.
-	// 	// With a ray intersecting multiple objects the second object
-	// 	// (which can be furhter) will return False as the closest_so_far criteria no longer is met
-	// 	hit_object := object.Hit(r, 0.0, float32(closest_so_far), &rec) // this will populate HitRecord
-	// 	if hit_object{
-	// 		closest_so_far = rec.T
-	// 		hit = true
-	// 		rec.ObjectId = obj_id
-	// 	}
-	// }
+	for obj_id, object := range objects {
+		// NOTE: we don't update hit var in here but inside the if block.
+		// With a ray intersecting multiple objects the second object
+		// (which can be furhter) will return False as the closest_so_far criteria no longer is met
+		hit_object := object.Hit(r, 0.0, float32(closest_so_far), &rec) // this will populate HitRecord
+		if hit_object{
+			closest_so_far = rec.T
+			hit = true
+			rec.ObjectId = obj_id
+		}
+	}
 	if hit {
 		N := (rec.Normal.Add(NewVec3(1,1,1))).MultF(float32(0.5))
 		// N = N.UnitVec()
