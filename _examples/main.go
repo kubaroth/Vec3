@@ -22,6 +22,48 @@ import (
 	"runtime/pprof"
 )
 
+type Camera struct{
+	Height, Width int
+	Origin Vec3
+	Lower_left_corner Vec3
+	Horizontal Vec3
+	Vertical Vec3
+}
+
+func NewCamera(width int) Camera {
+	//Image
+	aspect_ratio := 16.0 / 9.0
+	height := int(float64(width) / aspect_ratio)
+	fmt.Printf("image res", width, height)
+	
+	// Camera
+	cam := Camera{}
+	cam.Width = width
+	cam.Height = height
+	viewport_height := 2.0
+	viewport_width := aspect_ratio * viewport_height
+	focal_length := 1.0
+
+	cam.Origin = NewVec3(0, 0, 0)
+	cam.Horizontal = NewVec3(float32(viewport_width), 0, 0)
+	cam.Vertical = NewVec3(0, float32(viewport_height), 0)
+
+	cam.Lower_left_corner = cam.Origin.Subtr(cam.Horizontal.DivF(2.0))
+	cam.Lower_left_corner = cam.Lower_left_corner.Subtr(cam.Vertical.DivF(2.0))
+	cam.Lower_left_corner = cam.Lower_left_corner.Subtr(NewVec3(0, 0, float32(focal_length)))
+	
+	return cam
+}
+
+func (c Camera) GetRay(u,v float32) Ray {
+	u_horiz := c.Horizontal.MultF(u)
+	v_vert := c.Vertical.MultF(v)
+	dir := c.Lower_left_corner.Add(u_horiz)
+	dir = dir.Add(v_vert)
+	dir = dir.Subtr(c.Origin)		
+	return NewRay(c.Origin, dir)
+}
+
 type HitRecord struct {
 	P, Normal Vec3 // point and normal
 	T float32
@@ -150,52 +192,27 @@ func main() {
 		panic(err)
 	}
 
-	//Image
-	aspect_ratio := 16.0 / 9.0
-	width := 2000
-	height := int(float64(width) / aspect_ratio)
-	fmt.Printf("image res", width, height)
-	
-	// Camera
-	viewport_height := 2.0
-	viewport_width := aspect_ratio * viewport_height
-	focal_length := 1.0
-	_ = focal_length
-
-	origin := NewVec3(0, 0, 0)
-	horizontal := NewVec3(float32(viewport_width), 0, 0)
-	vertical := NewVec3(0, float32(viewport_height), 0)
-
-	lower_left_corner := origin.Subtr(horizontal.DivF(2.0))
-	llc := lower_left_corner.Subtr(vertical.DivF(2.0))
-	llc = llc.Subtr(NewVec3(0, 0, float32(focal_length)))
+	cam := NewCamera(200)
 
 	upLeft := image.Point{0, 0}
-	lowRight := image.Point{width, height}
+	lowRight := image.Point{cam.Width, cam.Height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	start := time.Now()
 	// var r, g uint8
-	for j := 0; j < height; j++ {
-		for i := 0; i < width; i++ {
+	for j := 0; j < cam.Height; j++ {
+		for i := 0; i < cam.Width; i++ {
 			// r = uint8(255 * float64(i) / float64(width-1))
 			// g = uint8(255 * float64(j) / float64(height))
 			// img.SetRGBA(i, height-j, color.RGBA{r, g, 0, 255})
 
-			u := float32(i) / float32(width-1)
-			v := float32(j) / float32(height-1)
-
-			u_horiz := horizontal.MultF(u)
-			v_vert := vertical.MultF(v)
-			dir := llc.Add(u_horiz)
-			dir = dir.Add(v_vert)
-			dir = dir.Subtr(origin)
-			
-			ray := NewRay(origin, dir)
+			u := float32(i) / float32(cam.Width-1)
+			v := float32(j) / float32(cam.Height-1)
+			ray := cam.GetRay(u,v)
 			// fmt.Println("ray", ray)
 			cd := ray_color(&ray, world)
 			// fmt.Println(i, j)
-			img.SetRGBA(i, height-j, cd)
+			img.SetRGBA(i, cam.Height-j, cd)
 		}
 	}
 
