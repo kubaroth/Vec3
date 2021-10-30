@@ -144,10 +144,26 @@ func write_color(cd Vec3, samples int) color.RGBA {
 func ray_color(r *Ray, objects []Hittable) Vec3 {
 	// Iteration over the list of objects can me moved into a separate type
 	// class in c++ HittableList (the world) but we leave it here for clarity
+	
 	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true, -1}
 	hit:= false
 	closest_so_far := float32(math.Inf(1.0))
-	
+
+	// Testing Hit() without dynamic dispatch
+	// s1:= Sphere{NewVec3(0,0,-1), 0.5}
+	// s2:= Sphere{NewVec3(0,-100.5,-1), 100.0}	
+	// hit_object := s1.Hit(r, 0.0, float32(closest_so_far), &rec) // half the time comapred
+	// if hit_object{
+	// 	closest_so_far = rec.T
+	// 	hit = true
+	// }
+	// hit_object = s2.Hit(r, 0.0, float32(closest_so_far), &rec) // to for range
+	// if hit_object{
+	// 	closest_so_far = rec.T
+	// 	hit = true
+	// }
+
+	// Option 2 - using dynamic dispatch
 	for obj_id, object := range objects {
 		// NOTE: we don't update hit var in here but inside the if block.
 		// With a ray intersecting multiple objects the second object
@@ -191,7 +207,9 @@ func main() {
 		Sphere{NewVec3(0,0,-1), 0.5},
 		Sphere{NewVec3(0,-100.5,-1), 100.0}}
 
-	path := os.Getenv("HOME") + "/storage/downloads/img.png"
+	path := "img.png"
+	path = os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
+	
 	fmt.Println("saving into:", path)
 
 	f, err := os.Create(path)
@@ -199,7 +217,7 @@ func main() {
 		panic(err)
 	}
 
-	cam := NewCamera(200)
+	cam := NewCamera(2000)
 
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{cam.Width, cam.Height}
