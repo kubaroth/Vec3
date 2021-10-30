@@ -131,13 +131,17 @@ func (b B) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool{
 }
 
 func write_color(cd Vec3, samples int) color.RGBA {
-	R := cd.At(0)
-	G := cd.At(1)
-	B := cd.At(2)
+	scale := float32(1.0) / float32(samples)
+	R := cd.At(0) * scale
+	G := cd.At(1) * scale
+	B := cd.At(2) * scale
+	R = Clamp(R, float32(0.0), float32(0.9999))
+	G = Clamp(G, float32(0.0), float32(0.9999))
+	B = Clamp(B, float32(0.0), float32(0.9999))
 	return color.RGBA{uint8(R*255), uint8(G*255), uint8(B*255), 255}	
 }
 
-func ray_color(r *Ray, objects []Hittable) color.RGBA {
+func ray_color(r *Ray, objects []Hittable) Vec3 {
 	// Iteration over the list of objects can me moved into a separate type
 	// class in c++ HittableList (the world) but we leave it here for clarity
 	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true, -1}
@@ -158,14 +162,14 @@ func ray_color(r *Ray, objects []Hittable) color.RGBA {
 	if hit {
 		N := (rec.Normal.Add(NewVec3(1,1,1))).MultF(float32(0.5))
 		// N = N.UnitVec()
-		return write_color(N, 1)
+		return N
 	}
 	// Background
 	unit_direction := r.Direction().UnitVec()
 	t := float32(0.5 * (unit_direction.At(1) + 1.0))
 	sky := NewVec3(0.5, 0.7, 1.0).MultF(t)
 	sky = sky.Add(NewVec3(1, 1, 1).MultF(1 - t))
-	return write_color(sky, 1)
+	return sky
 }
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
@@ -209,13 +213,15 @@ func main() {
 			// g = uint8(255 * float64(j) / float64(height))
 			// img.SetRGBA(i, height-j, color.RGBA{r, g, 0, 255})
 
+			pixel_color := NewVec3(0,0,0); _ = pixel_color
 			u := float32(i) / float32(cam.Width-1)
 			v := float32(j) / float32(cam.Height-1)
 			ray := cam.GetRay(u,v)
 			// fmt.Println("ray", ray)
 			cd := ray_color(&ray, world)
+			px_cd := write_color(cd,1)
 			// fmt.Println(i, j)
-			img.SetRGBA(i, cam.Height-j, cd)
+			img.SetRGBA(i, cam.Height-j, px_cd)
 		}
 	}
 
