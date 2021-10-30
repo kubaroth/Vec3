@@ -206,21 +206,18 @@ func main() {
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	start := time.Now()
-	// var r, g uint8
+	samples := 16
+
 	for j := 0; j < cam.Height; j++ {
 		for i := 0; i < cam.Width; i++ {
-			// r = uint8(255 * float64(i) / float64(width-1))
-			// g = uint8(255 * float64(j) / float64(height))
-			// img.SetRGBA(i, height-j, color.RGBA{r, g, 0, 255})
-
 			pixel_color := NewVec3(0,0,0); _ = pixel_color
-			u := float32(i) / float32(cam.Width-1)
-			v := float32(j) / float32(cam.Height-1)
-			ray := cam.GetRay(u,v)
-			// fmt.Println("ray", ray)
-			cd := ray_color(&ray, world)
-			px_cd := write_color(cd,1)
-			// fmt.Println(i, j)
+			for s:=0; s < samples; s++ {
+				u := (float32(i) + RandFloat()) / float32(cam.Width-1)
+				v := (float32(j) + RandFloat()) / float32(cam.Height-1)
+				ray := cam.GetRay(u,v)
+				pixel_color = pixel_color.Add(ray_color(&ray, world))
+			}
+			px_cd := write_color(pixel_color, samples)
 			img.SetRGBA(i, cam.Height-j, px_cd)
 		}
 	}
