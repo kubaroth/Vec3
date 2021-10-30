@@ -2,6 +2,7 @@ package raytrace
 
 import (
 	"math"
+	"math/rand"
 )
 
 func Deg_to_Rad(deg float64) float64 {
@@ -107,4 +108,23 @@ func (r Ray) Direction() Vec3 {
 
 func (r Ray) At(t float32) Vec3 {
 	return r.Orig.Add(r.Dir.MultF(t))
+}
+
+func RandFloat() float32 {
+	return rand.Float32()
+}
+func RandFloatMinMax(min, max float32) float32 {
+	// Returns a random real in [min,max).
+    return min + (max-min)*RandFloat()
+}
+
+func Clamp(x, min, max float32 ) float32{
+	if x < min {
+		return min
+	}
+	if x > max {
+		return max
+	}
+	return x
+
 }

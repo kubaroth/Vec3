@@ -130,6 +130,13 @@ func (b B) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool{
 	return true
 }
 
+func write_color(cd Vec3, samples int) color.RGBA {
+	R := cd.At(0)
+	G := cd.At(1)
+	B := cd.At(2)
+	return color.RGBA{uint8(R*255), uint8(G*255), uint8(B*255), 255}	
+}
+
 func ray_color(r *Ray, objects []Hittable) color.RGBA {
 	// Iteration over the list of objects can me moved into a separate type
 	// class in c++ HittableList (the world) but we leave it here for clarity
@@ -151,18 +158,14 @@ func ray_color(r *Ray, objects []Hittable) color.RGBA {
 	if hit {
 		N := (rec.Normal.Add(NewVec3(1,1,1))).MultF(float32(0.5))
 		// N = N.UnitVec()
-		R := N.At(0)
-		G := N.At(1)
-		B := N.At(2)
-		return color.RGBA{uint8(R*255), uint8(G*255), uint8(B*255), 255}
+		return write_color(N, 1)
 	}
 	// Background
 	unit_direction := r.Direction().UnitVec()
 	t := float32(0.5 * (unit_direction.At(1) + 1.0))
 	sky := NewVec3(0.5, 0.7, 1.0).MultF(t)
 	sky = sky.Add(NewVec3(1, 1, 1).MultF(1 - t))
-	sky = sky.MultF(255) // NOTE: rember to shift range to 0-255
-	return color.RGBA{uint8(sky.At(0)), uint8(sky.At(1)), uint8(sky.At(2)), 255}
+	return write_color(sky, 1)
 }
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
