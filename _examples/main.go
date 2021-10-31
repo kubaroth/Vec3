@@ -30,8 +30,10 @@ type Camera struct{
 	Vertical Vec3
 }
 
-func NewCamera(width int) Camera {
+func NewCamera(lookfrom, lookat Vec3, width int) Camera {
+
 	//Image
+	vfov := 90.0
 	aspect_ratio := 16.0 / 9.0
 	height := int(float64(width) / aspect_ratio)
 	fmt.Printf("image res", width, height)
@@ -40,18 +42,37 @@ func NewCamera(width int) Camera {
 	cam := Camera{}
 	cam.Width = width
 	cam.Height = height
-	viewport_height := 2.0
+	theta := float64(Deg_to_Rad(vfov))
+	h := math.Tan(theta/2)
+	_ = h
+	viewport_height := 2.0 *h
 	viewport_width := aspect_ratio * viewport_height
-	focal_length := 1.0
 
-	cam.Origin = NewVec3(0, 0, 0)
+	
+	vup := NewVec3(0,1,0)
+	w := (lookfrom.Subtr(lookat)).UnitVec()
+	u := (vup.Cross(w)).UnitVec()
+	v := w.Cross(u)
+	_ = v
+	// fmt.Println("w,u,v", w, u, v, viewport_width, viewport_height)	
+	cam.Origin = lookfrom
+
 	cam.Horizontal = NewVec3(float32(viewport_width), 0, 0)
 	cam.Vertical = NewVec3(0, float32(viewport_height), 0)
 
-	cam.Lower_left_corner = cam.Origin.Subtr(cam.Horizontal.DivF(2.0))
-	cam.Lower_left_corner = cam.Lower_left_corner.Subtr(cam.Vertical.DivF(2.0))
-	cam.Lower_left_corner = cam.Lower_left_corner.Subtr(NewVec3(0, 0, float32(focal_length)))
+	// Disable scalling by u,v if using UnitVec() when calculatingg
+	// basis vector / cross product - otherwise image gets stretched vertically
+	// cam.Horizontal = cam.Horizontal.Mult(u) //
+	// cam.Vertical = cam.Vertical.Mult(v)     
+
+	fmt.Println("hor/ver", cam.Horizontal, cam.Vertical)
+	// cam.Horizontal = NewVec3(4,0,0)
+	// cam.Vertical = NewVec3(0,2,0)
 	
+	o := cam.Origin.Subtr(cam.Horizontal.DivF(2.0))
+	o = o.Subtr(cam.Vertical.DivF(2.0))
+	cam.Lower_left_corner = o.Subtr(w)
+	// fmt.Println("llc:", cam.Lower_left_corner)
 	return cam
 }
 
@@ -60,7 +81,7 @@ func (c Camera) GetRay(u,v float32) Ray {
 	v_vert := c.Vertical.MultF(v)
 	dir := c.Lower_left_corner.Add(u_horiz)
 	dir = dir.Add(v_vert)
-	dir = dir.Subtr(c.Origin)		
+	dir = dir.Subtr(c.Origin)
 	return NewRay(c.Origin, dir)
 }
 
@@ -217,14 +238,14 @@ func main() {
 		panic(err)
 	}
 
-	cam := NewCamera(2000)
+	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 200)
 
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{cam.Width, cam.Height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	start := time.Now()
-	samples := 16
+	samples := 1
 
 	for j := 0; j < cam.Height; j++ {
 		for i := 0; i < cam.Width; i++ {
