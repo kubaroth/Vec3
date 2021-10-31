@@ -43,31 +43,24 @@ func NewCamera(lookfrom, lookat Vec3, width int) Camera {
 	cam.Width = width
 	cam.Height = height
 	theta := float64(Deg_to_Rad(vfov))
-	h := math.Tan(theta/2)
+	fmt.Println("theta", theta)
+	h := math.Tan(theta/2) // half height
 	_ = h
 	viewport_height := 2.0 *h
 	viewport_width := aspect_ratio * viewport_height
-
 	
 	vup := NewVec3(0,1,0)
 	w := (lookfrom.Subtr(lookat)).UnitVec()
 	u := (vup.Cross(w)).UnitVec()
 	v := w.Cross(u)
-	_ = v
-	// fmt.Println("w,u,v", w, u, v, viewport_width, viewport_height)	
+	// fmt.Println("w,u,v", w, u, v, viewport_width, viewport_height)
 	cam.Origin = lookfrom
 
-	cam.Horizontal = NewVec3(float32(viewport_width), 0, 0)
-	cam.Vertical = NewVec3(0, float32(viewport_height), 0)
-
-	// Disable scalling by u,v if using UnitVec() when calculatingg
-	// basis vector / cross product - otherwise image gets stretched vertically
-	// cam.Horizontal = cam.Horizontal.Mult(u) //
-	// cam.Vertical = cam.Vertical.Mult(v)     
-
-	fmt.Println("hor/ver", cam.Horizontal, cam.Vertical)
-	// cam.Horizontal = NewVec3(4,0,0)
-	// cam.Vertical = NewVec3(0,2,0)
+	// NOTE: Start from u, or v vector and multiple by viewport_width float
+	//       In order to scale each axis - this was the issue in the previous commit
+	cam.Horizontal = u.MultF(float32(viewport_width))
+	cam.Vertical = v.MultF(float32(viewport_height))
+	// fmt.Println("hor/ver", cam.Horizontal, cam.Vertical)
 	
 	o := cam.Origin.Subtr(cam.Horizontal.DivF(2.0))
 	o = o.Subtr(cam.Vertical.DivF(2.0))
