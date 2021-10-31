@@ -51,8 +51,8 @@ func NewCamera(lookfrom, lookat Vec3, width int) Camera {
 	
 	vup := NewVec3(0,1,0)
 	w := (lookfrom.Subtr(lookat)).UnitVec()
-	u := (vup.Cross(w)).UnitVec()
-	v := w.Cross(u)
+	u := (w.Cross(vup)).UnitVec()
+	v := u.Cross(w)
 	// fmt.Println("w,u,v", w, u, v, viewport_width, viewport_height)
 	cam.Origin = lookfrom
 
