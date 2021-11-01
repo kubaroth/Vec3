@@ -20,6 +20,7 @@ import (
 	"time"
 	"flag"
 	"runtime/pprof"
+	"sync"
 )
 
 type Camera struct{
@@ -240,7 +241,15 @@ func main() {
 	start := time.Now()
 	samples := 1
 
+	var wg sync.WaitGroup; _ = wg
+	// wg.Add(cam.Height)
+	
 	for j := 0; j < cam.Height; j++ {
+
+		// go func(j int) {
+        // defer wg.Done()
+		
+		
 		for i := 0; i < cam.Width; i++ {
 			pixel_color := NewVec3(0,0,0); _ = pixel_color
 			for s:=0; s < samples; s++ {
@@ -252,8 +261,12 @@ func main() {
 			px_cd := write_color(pixel_color, samples)
 			img.SetRGBA(i, cam.Height-j, px_cd)
 		}
+
+		// }(j)	
 	}
 
+	// wg.Wait()
+	
 	fmt.Println("time", time.Since(start))
 
 	defer f.Close()
