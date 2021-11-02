@@ -128,3 +128,42 @@ func Clamp(x, min, max float32 ) float32{
 	return x
 
 }
+
+type AABB struct {
+	min, max Vec3
+}
+
+func NewAABB(min, max Vec3) AABB{
+	return AABB{min,max}
+}
+
+func(aabb AABB) Min() Vec3 {
+	return aabb.min
+}
+
+func(aabb AABB) Max() Vec3 {
+	return aabb.max
+}
+func (aabb AABB) Hit(r Ray, t_min, t_max float64) bool{
+	for a:=0; a < 3; a++{
+		ray_dir := float64(r.Direction().At(a))
+
+		aa := aabb.min.At(a) - r.Origin().At(a) ; _ = aa
+		bb := aabb.max.At(a) - r.Origin().At(a) ; _ = bb
+
+
+		t0 := math.Min( (float64(aabb.min.At(a) - r.Origin().At(a))) / ray_dir,
+			(float64(aabb.max.At(a) - r.Origin().At(a))) / ray_dir)
+		c := 1;_= c
+		t1 := math.Max( (float64(aabb.min.At(a) - r.Origin().At(a))) / ray_dir,
+			(float64(aabb.max.At(a) - r.Origin().At(a))) / ray_dir)
+		c = 2
+		// using math.Min/Max to handle NaNs when dividing by 0 
+		t_min = math.Max(t0, t_min)
+		t_max = math.Min(t1, t_max)
+		if (t_max <= t_min){
+			return false
+		}
+	}
+	return true
+}

@@ -90,13 +90,7 @@ type Sphere struct {
 	Center Vec3
 	Radius float32
 }
-type B struct {
-	x float64
-}
 
-type Hittable interface {
-	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool
-}
 
 // Equation of sphere in vector form
 // (P - C) dot (P - C) = r**2
@@ -130,6 +124,21 @@ func (s Sphere) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
 	return true;
 }
 
+
+type XYRect struct{
+	X0, X1, Y0, Y1, K float32
+}
+
+func(r XYRect) BBox(output_box *AABB) bool {
+	// TODO output_box = &NewAABB(NewVec3(r.X0, r.X1, r.K-0.0001), NewVec3(r.Y0,Y1,r,K+0.0001))
+	return true
+}
+
+
+type Hittable interface {
+	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool
+}
+
 func (rec *HitRecord) set_face_normal(r *Ray, outward_normal * Vec3) {
 	if r.Direction().Dot(*outward_normal) < 0 {
 		rec.Normal = *outward_normal
@@ -140,10 +149,7 @@ func (rec *HitRecord) set_face_normal(r *Ray, outward_normal * Vec3) {
 	}
 }
 
-func (b B) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool{
-	fmt.Println("B")
-	return true
-}
+
 
 func write_color(cd Vec3, samples int) color.RGBA {
 	scale := float32(1.0) / float32(samples)

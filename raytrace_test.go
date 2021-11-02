@@ -1,3 +1,7 @@
+// Debuging with Delve:
+// dlv test -- -test.run ^TestAABB
+// b TestAABB
+
 package raytrace
 
 import (
@@ -122,5 +126,24 @@ func TestVecOther(t *testing.T) {
 	}
 	
 	// Cross product
+
+}
+
+
+func TestAABB(t *testing.T) {
+	r := Ray{NewVec3(0, 0, -2), NewVec3(0,0,1)}
+	aabb := NewAABB(NewVec3(-1,-1,0), NewVec3(1,1,0))
+	want := true
+	result := aabb.Hit(r,1000, 0)
+	if  result != want {
+		t.Errorf(" %v != %v", result, want)
+	}
+	// chexk 0,2 still hits?
+	r = Ray{NewVec3(0, 2, -2), NewVec3(0,0,1)}
+	want = false
+	result = aabb.Hit(r, 1000, 0)
+	if  result != want {
+		t.Errorf(" %v != %v", result, want)
+	}
 
 }
