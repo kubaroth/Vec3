@@ -137,6 +137,10 @@ func NewAABB(min, max Vec3) AABB{
 	return AABB{min,max}
 }
 
+func NewAABBUninit() AABB{
+	return NewAABB(NewVec3(-1,-1, -0.0001), NewVec3(1,1, 0.0001))
+}
+
 func(aabb AABB) Min() Vec3 {
 	return aabb.min
 }
@@ -222,3 +226,83 @@ func (aabb AABB) HitOptimized(r Ray, t_min, t_max float64) bool{
 	return true
 }
 
+
+/////
+
+type HitRecord struct {
+	P, Normal Vec3 // point and normal
+	T float32
+	FrontFace bool
+	ObjectId int // default -1 : helper to determine which object was hit by a ray
+}
+
+type Sphere struct {
+	Center Vec3
+	Radius float32
+}
+
+
+// Equation of sphere in vector form
+// (P - C) dot (P - C) = r**2
+// (A + tb - C) dot (A + tb - C) = r**2
+// A + tb is a Ray
+// quadratic equation x**2 + x + 1 =0 where t is unkown
+// t**2 b dot b + 2t b dot (A-C) + (A-C) dot(A-C) - r**2 = 0
+//      --a---       -----b-----   ------c--------
+func (s Sphere) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
+	oc := r.Origin().Subtr(s.Center)
+	a := r.Direction().Dot(r.Direction())
+	half_b := oc.Dot(r.Direction())
+	c := oc.Dot(oc) - (s.Radius * s.Radius)
+	discriminant := float64(half_b * half_b - a*c) // finding roots
+	if discriminant < 0{
+		return false
+	}
+    // Find the nearest root that lies in the acceptable range.
+	sqrtd := float32(math.Sqrt(discriminant))
+	root := (-half_b - sqrtd) / a
+	if (root < t_min || t_max < root) {
+        root = (-half_b + sqrtd) / a
+        if (root < t_min || t_max < root) {
+            return false
+		}
+    }
+    rec.T = root;
+    rec.P = r.At(rec.T); // hit point at sphere
+    outward_normal := (rec.P.Subtr(s.Center)).DivF(s.Radius)
+    rec.set_face_normal(r, &outward_normal)
+	return true;
+}
+
+func (s Sphere) BBox(out_aabb *AABB) bool  {
+	aabb := NewAABB(s.Center.Subtr(NewVec3(s.Radius, s.Radius, s.Radius)),
+		s.Center.Add(NewVec3(s.Radius, s.Radius, s.Radius)))
+	*out_aabb = aabb
+	return true
+}
+
+
+type XYRect struct{
+	X0, X1, Y0, Y1, K float32
+}
+
+func(r XYRect) BBox(output_box *AABB) bool {
+	// TODO output_box = &NewAABB(NewVec3(r.X0, r.X1, r.K-0.0001), NewVec3(r.Y0,Y1,r,K+0.0001))
+	return true
+}
+
+
+type Hittable interface {
+	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool
+	BBox(aabb *AABB) bool
+}
+
+func (rec *HitRecord) set_face_normal(r *Ray, outward_normal * Vec3) {
+	if r.Direction().Dot(*outward_normal) < 0 {
+		rec.Normal = *outward_normal
+		rec.FrontFace = true
+	} else {
+		rec.Normal = NewVec3(-outward_normal.At(0), -outward_normal.At(1), -outward_normal.At(2))
+		rec.FrontFace = false
+	}
+}

@@ -45,7 +45,6 @@ func NewCamera(lookfrom, lookat Vec3, width int) Camera {
 	cam.Width = width
 	cam.Height = height
 	theta := float64(Deg_to_Rad(vfov))
-	fmt.Println("theta", theta)
 	h := math.Tan(theta/2) // half height
 	_ = h
 	viewport_height := 2.0 *h
@@ -79,78 +78,6 @@ func (c Camera) GetRay(u,v float32) Ray {
 	dir = dir.Subtr(c.Origin)
 	return NewRay(c.Origin, dir)
 }
-
-type HitRecord struct {
-	P, Normal Vec3 // point and normal
-	T float32
-	FrontFace bool
-	ObjectId int // default -1 : helper to determine which object was hit by a ray
-}
-
-type Sphere struct {
-	Center Vec3
-	Radius float32
-}
-
-
-// Equation of sphere in vector form
-// (P - C) dot (P - C) = r**2
-// (A + tb - C) dot (A + tb - C) = r**2
-// A + tb is a Ray
-// quadratic equation x**2 + x + 1 =0 where t is unkown
-// t**2 b dot b + 2t b dot (A-C) + (A-C) dot(A-C) - r**2 = 0
-//      --a---       -----b-----   ------c--------
-func (s Sphere) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
-	oc := r.Origin().Subtr(s.Center)
-	a := r.Direction().Dot(r.Direction())
-	half_b := oc.Dot(r.Direction())
-	c := oc.Dot(oc) - (s.Radius * s.Radius)
-	discriminant := float64(half_b * half_b - a*c) // finding roots
-	if discriminant < 0{
-		return false
-	}
-    // Find the nearest root that lies in the acceptable range.
-	sqrtd := float32(math.Sqrt(discriminant))
-	root := (-half_b - sqrtd) / a
-	if (root < t_min || t_max < root) {
-        root = (-half_b + sqrtd) / a
-        if (root < t_min || t_max < root) {
-            return false
-		}
-    }
-    rec.T = root;
-    rec.P = r.At(rec.T); // hit point at sphere
-    outward_normal := (rec.P.Subtr(s.Center)).DivF(s.Radius)
-    rec.set_face_normal(r, &outward_normal)
-	return true;
-}
-
-
-type XYRect struct{
-	X0, X1, Y0, Y1, K float32
-}
-
-func(r XYRect) BBox(output_box *AABB) bool {
-	// TODO output_box = &NewAABB(NewVec3(r.X0, r.X1, r.K-0.0001), NewVec3(r.Y0,Y1,r,K+0.0001))
-	return true
-}
-
-
-type Hittable interface {
-	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool
-}
-
-func (rec *HitRecord) set_face_normal(r *Ray, outward_normal * Vec3) {
-	if r.Direction().Dot(*outward_normal) < 0 {
-		rec.Normal = *outward_normal
-		rec.FrontFace = true
-	} else {
-		rec.Normal = NewVec3(-outward_normal.At(0), -outward_normal.At(1), -outward_normal.At(2))
-		rec.FrontFace = false
-	}
-}
-
-
 
 func write_color(cd Vec3, samples int) color.RGBA {
 	scale := float32(1.0) / float32(samples)

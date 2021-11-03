@@ -167,3 +167,28 @@ func TestAABB(t *testing.T) {
 		t.Errorf(" %v != %v", result, want)
 	}
 }
+
+
+func TestSphereBBox(t *testing.T) {
+
+	s := Sphere{NewVec3(0,0,-1), 0.5}
+
+	// Min() test
+	want := NewVec3(-0.5, -0.5, -1.5)
+	aabb := NewAABBUninit()
+	s.BBox(&aabb)
+	result := aabb.Min()
+	if  result != want {
+		t.Errorf(" %v != %v", result, want)
+	}
+	// Max() test
+	want = NewVec3(0.5, 0.5, -0.5)
+	aabb = NewAABBUninit()
+	s.BBox(&aabb)
+	result = aabb.Max()
+	if  result != want {
+		t.Errorf(" %v != %v", result, want)
+	}
+
+
+}
