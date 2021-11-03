@@ -178,3 +178,47 @@ func (aabb AABB) Hit(r Ray, t_min, t_max float64) bool{
 	}
 	return true
 }
+
+func (aabb AABB) HitOptimized(r Ray, t_min, t_max float64) bool{
+	for a:=0; a < 3; a++{
+		var t0, t1, invD float64
+		ray_dir := float64(r.Direction().At(a))
+
+		// Handling division by 0
+		t0_min := float64(aabb.min.At(a) - r.Origin().At(a))
+		t0_max := float64(aabb.max.At(a) - r.Origin().At(a))
+		if ray_dir == 0.0 {
+			if t0_min < 0 {
+				t0_min = math.Inf(-1)
+			} else {
+				t0_min = math.Inf(1)
+			}
+			if t0_max < 0 {
+				t0_max = math.Inf(-1)
+			} else {
+				t0_max = math.Inf(1)
+			}
+			t0 = math.Min( t0_min, t0_max)
+			t1 = math.Max( t0_min, t0_max)
+		} else {
+			invD = 1.0 / ray_dir
+			t0 = math.Min( t0_min / ray_dir, t0_max / ray_dir) * invD
+			t1 = math.Max( t0_min / ray_dir, t0_max / ray_dir) * invD
+		}
+		if invD < 0.0 {
+			t0,t1 = t1,t0
+		}
+
+		if t0 > t_min {
+			t_min = t0
+		}
+		if t1 < t_max {
+			t_max = t1
+		}
+		if (t_max <= t_min){
+			return false
+		}
+	}
+	return true
+}
+
