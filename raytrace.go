@@ -146,19 +146,30 @@ func(aabb AABB) Max() Vec3 {
 }
 func (aabb AABB) Hit(r Ray, t_min, t_max float64) bool{
 	for a:=0; a < 3; a++{
+		var t0, t1 float64
 		ray_dir := float64(r.Direction().At(a))
 
-		aa := aabb.min.At(a) - r.Origin().At(a) ; _ = aa
-		bb := aabb.max.At(a) - r.Origin().At(a) ; _ = bb
+		// Handling division by 0
+		t0_min := float64(aabb.min.At(a) - r.Origin().At(a))
+		t0_max := float64(aabb.max.At(a) - r.Origin().At(a))
+		if ray_dir == 0.0 {
+			if t0_min < 0 {
+				t0_min = math.Inf(-1)
+			} else {
+				t0_min = math.Inf(1)
+			}
+			if t0_max < 0 {
+				t0_max = math.Inf(-1)
+			} else {
+				t0_max = math.Inf(1)
+			}
+			t0 = math.Min( t0_min, t0_max)
+			t1 = math.Max( t0_min, t0_max)
+		} else {
+			t0 = math.Min( t0_min / ray_dir, t0_max / ray_dir)
+			t1 = math.Max( t0_min / ray_dir, t0_max / ray_dir)
+		}
 
-
-		t0 := math.Min( (float64(aabb.min.At(a) - r.Origin().At(a))) / ray_dir,
-			(float64(aabb.max.At(a) - r.Origin().At(a))) / ray_dir)
-		c := 1;_= c
-		t1 := math.Max( (float64(aabb.min.At(a) - r.Origin().At(a))) / ray_dir,
-			(float64(aabb.max.At(a) - r.Origin().At(a))) / ray_dir)
-		c = 2
-		// using math.Min/Max to handle NaNs when dividing by 0 
 		t_min = math.Max(t0, t_min)
 		t_max = math.Min(t1, t_max)
 		if (t_max <= t_min){

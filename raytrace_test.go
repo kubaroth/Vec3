@@ -7,6 +7,7 @@ package raytrace
 import (
 	_ "fmt"
 	"testing"
+	"math"
 )
 
 func TestRay1(t *testing.T) {
@@ -132,16 +133,22 @@ func TestVecOther(t *testing.T) {
 
 func TestAABB(t *testing.T) {
 	r := Ray{NewVec3(0, 0, -2), NewVec3(0,0,1)}
-	aabb := NewAABB(NewVec3(-1,-1,0), NewVec3(1,1,0))
+	aabb := NewAABB(NewVec3(-1,-1, -0.0001), NewVec3(1,1, 0.0001)) // a plane infinitly small in Z
 	want := true
-	result := aabb.Hit(r,1000, 0)
+	result := aabb.Hit(r, math.Inf(-1), math.Inf(1))
 	if  result != want {
 		t.Errorf(" %v != %v", result, want)
 	}
-	// chexk 0,2 still hits?
 	r = Ray{NewVec3(0, 2, -2), NewVec3(0,0,1)}
 	want = false
-	result = aabb.Hit(r, 1000, 0)
+	result = aabb.Hit(r, math.Inf(-1), math.Inf(1))
+	if  result != want {
+		t.Errorf(" %v != %v", result, want)
+	}
+
+	r = Ray{NewVec3(0.9999, 0.9999, -2), NewVec3(0,0,1)}
+	want = true
+	result = aabb.Hit(r, math.Inf(-1), math.Inf(1))
 	if  result != want {
 		t.Errorf(" %v != %v", result, want)
 	}
