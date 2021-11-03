@@ -11,6 +11,7 @@ package main
 
 import (
 	. "github.com/kubaroth/Vec3"
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -228,8 +229,11 @@ func main() {
 		Sphere{NewVec3(0,0,-1), 0.5},
 		Sphere{NewVec3(0,-100.5,-1), 100.0}}
 
-	path := "img.png"
-	path = os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
+
+	path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		path = "img.png"
+	}
 	
 	fmt.Println("saving into:", path)
 
