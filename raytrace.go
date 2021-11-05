@@ -229,6 +229,56 @@ func (aabb AABB) HitOptimized(r Ray, t_min, t_max float64) bool{
 
 /////
 
+type Hittable interface {
+	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool
+	BBox(aabb *AABB) bool
+}
+
+func (rec *HitRecord) set_face_normal(r *Ray, outward_normal * Vec3) {
+	if r.Direction().Dot(*outward_normal) < 0 {
+		rec.Normal = *outward_normal
+		rec.FrontFace = true
+	} else {
+		rec.Normal = NewVec3(-outward_normal.At(0), -outward_normal.At(1), -outward_normal.At(2))
+		rec.FrontFace = false
+	}
+}
+
+
+type HittableList struct {
+	Objects []Hittable
+}
+
+func (hl HittableList) 	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
+	temp_rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true, -1}
+	hit_anything:= false;
+	closest_so_far := float32(math.Inf(1.0))
+
+	for obj_id, object := range hl.Objects {
+		if object.Hit(r, 0.0, float32(closest_so_far), &temp_rec) {
+			closest_so_far = temp_rec.T
+			hit_anything = true
+			temp_rec.ObjectId = obj_id
+			*rec = temp_rec
+		}
+	}
+
+	return hit_anything
+}
+
+
+func(r HittableList) BBox(output_box *AABB) bool {
+	// TODO output_box = &NewAABB(NewVec3(r.X0, r.X1, r.K-0.0001), NewVec3(r.Y0,Y1,r,K+0.0001))
+	return true
+}
+
+// passing pointer to HittableList as we update 
+func (hl *HittableList) 	Add(object Hittable) {
+	hl.Objects = append(hl.Objects, object)
+	println("world length", len(hl.Objects))
+}
+
+
 type HitRecord struct {
 	P, Normal Vec3 // point and normal
 	T float32
@@ -292,17 +342,3 @@ func(r XYRect) BBox(output_box *AABB) bool {
 }
 
 
-type Hittable interface {
-	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool
-	BBox(aabb *AABB) bool
-}
-
-func (rec *HitRecord) set_face_normal(r *Ray, outward_normal * Vec3) {
-	if r.Direction().Dot(*outward_normal) < 0 {
-		rec.Normal = *outward_normal
-		rec.FrontFace = true
-	} else {
-		rec.Normal = NewVec3(-outward_normal.At(0), -outward_normal.At(1), -outward_normal.At(2))
-		rec.FrontFace = false
-	}
-}

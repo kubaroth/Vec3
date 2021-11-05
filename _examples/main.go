@@ -90,40 +90,10 @@ func write_color(cd Vec3, samples int) color.RGBA {
 	return color.RGBA{uint8(R*255), uint8(G*255), uint8(B*255), 255}	
 }
 
-func ray_color(r *Ray, objects []Hittable) Vec3 {
-	// Iteration over the list of objects can me moved into a separate type
-	// class in c++ HittableList (the world) but we leave it here for clarity
-	
+func ray_color(r *Ray, world HittableList) Vec3 {
 	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true, -1}
-	hit:= false
-	closest_so_far := float32(math.Inf(1.0))
-
-	// Testing Hit() without dynamic dispatch
-	// s1:= Sphere{NewVec3(0,0,-1), 0.5}
-	// s2:= Sphere{NewVec3(0,-100.5,-1), 100.0}	
-	// hit_object := s1.Hit(r, 0.0, float32(closest_so_far), &rec) // half the time comapred
-	// if hit_object{
-	// 	closest_so_far = rec.T
-	// 	hit = true
-	// }
-	// hit_object = s2.Hit(r, 0.0, float32(closest_so_far), &rec) // to for range
-	// if hit_object{
-	// 	closest_so_far = rec.T
-	// 	hit = true
-	// }
-
-	// Option 2 - using dynamic dispatch
-	for obj_id, object := range objects {
-		// NOTE: we don't update hit var in here but inside the if block.
-		// With a ray intersecting multiple objects the second object
-		// (which can be furhter) will return False as the closest_so_far criteria no longer is met
-		hit_object := object.Hit(r, 0.0, float32(closest_so_far), &rec) // this will populate HitRecord
-		if hit_object{
-			closest_so_far = rec.T
-			hit = true
-			rec.ObjectId = obj_id
-		}
-	}
+	hit := world.Hit(r, 0, float32(math.Inf(1.0)), &rec)
+	
 	if hit {
 		N := (rec.Normal.Add(NewVec3(1,1,1))).MultF(float32(0.5))
 		// N = N.UnitVec()
@@ -150,13 +120,10 @@ func main() {
         defer pprof.StopCPUProfile()
     }
 
+	world := HittableList{}
+	world.Add(Sphere{NewVec3(0,0,-1), 0.5})
+	world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
 	
-	// The slice of types implements Hittable interface (HittableList in c++)n
-	world := []Hittable{
-		Sphere{NewVec3(0,0,-1), 0.5},
-		Sphere{NewVec3(0,-100.5,-1), 100.0}}
-
-
 	path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		path = "img.png"
