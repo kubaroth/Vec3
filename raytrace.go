@@ -1,8 +1,10 @@
 package raytrace
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
+	"sort"
 )
 
 func Deg_to_Rad(deg float64) float64 {
@@ -118,6 +120,11 @@ func RandFloatMinMax(min, max float32) float32 {
     return min + (max-min)*RandFloat()
 }
 
+func RandInt(min, max float32) int {
+	// Returns a random int in [min,max].
+    return int(RandFloatMinMax(min, max+1))
+}
+
 func Clamp(x, min, max float32 ) float32{
 	if x < min {
 		return min
@@ -148,7 +155,7 @@ func(aabb AABB) Min() Vec3 {
 func(aabb AABB) Max() Vec3 {
 	return aabb.max
 }
-func (aabb AABB) Hit(r Ray, t_min, t_max float64) bool{
+func (aabb AABB) Hit(r *Ray, t_min, t_max float64) bool{
 	for a:=0; a < 3; a++{
 		var t0, t1 float64
 		ray_dir := float64(r.Direction().At(a))
@@ -267,13 +274,156 @@ func (hl HittableList) 	Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
 }
 
 
-func(r HittableList) BBox(output_box *AABB) bool {
+func(hl HittableList) BBox(output_box *AABB) bool {
 	// TODO output_box = &NewAABB(NewVec3(r.X0, r.X1, r.K-0.0001), NewVec3(r.Y0,Y1,r,K+0.0001))
+
+	if len(hl.Objects) == 0{
+		return false
+	}
+
+	temp_box := NewAABBUninit()
+	first_box := true
+	for _, object := range hl.Objects {
+		if !object.BBox(&temp_box) {
+			return false;
+		}
+		if first_box {
+			*output_box = temp_box
+		} else {
+			*output_box = Surrounding_box(*output_box, temp_box)
+		}
+
+	}
+	
 	return true
 }
 
+func Surrounding_box(box0, box1 AABB) AABB {
+
+	x := float32(math.Min(float64(box0.Min().At(0)), float64(box1.Min().At(0))))
+	y := float32(math.Min(float64(box0.Min().At(1)), float64(box1.Min().At(1))))
+	z := float32(math.Min(float64(box0.Min().At(2)), float64(box1.Min().At(2))))
+	small := NewVec3(x,y,z)
+	x = float32(math.Max(float64(box0.Max().At(0)), float64(box1.Max().At(0))))
+	y = float32(math.Max(float64(box0.Max().At(1)), float64(box1.Max().At(1))))
+	z = float32(math.Max(float64(box0.Max().At(2)), float64(box1.Max().At(2))))
+	big := NewVec3(x,y,z)
+
+	return NewAABB(small, big)
+}
+
+type BVH_node struct {
+	Left, Right *Hittable // TOOD: this does not compile if using pointer
+	Box AABB
+}
+
+func NewBVH() *BVH_node{
+	temp := BVH_node{nil, nil, NewAABBUninit()}
+	return &temp
+}
+
+func NewBVHSplit(objects []Hittable, start, end int) *BVH_node{
+
+	// randomly choose an axis
+	// sort the primitives (using std::sort)
+	// put half in each subtree
+
+	bvh := NewBVH()
+	
+	axis := RandInt(0,2)
+	_ = axis
+
+	comparator := box_x_compare
+	if axis == 1 {
+		comparator = box_y_compare
+	} else {
+		comparator = box_z_compare
+	}
+	_ = comparator
+	object_span := end - start
+
+	if object_span == 1 {
+		*bvh.Left = objects[start]
+		*bvh.Right = objects[start] // the same
+	} else if object_span == 2 {
+		if comparator(objects[start], objects[start+1]) {
+			*bvh.Left = objects[start]   // * handles pointer to interface errors
+			*bvh.Right = objects[start+1]
+		} else {
+			*bvh.Left = objects[start+1]
+			*bvh.Right = objects[start]
+		}
+	} else {
+		sort.SliceStable(objects, func(i,j int) bool {
+			return box_compare(objects[i], objects[j], axis)
+		})
+
+		mid := start + object_span/2
+		*bvh.Left = NewBVHSplit(objects, start, mid)
+		*bvh.Right = NewBVHSplit(objects, mid, end)
+	}
+
+	box_left := NewAABBUninit()
+	box_right := NewAABBUninit()
+	if !(*bvh.Left).BBox(&box_left) || !(*bvh.Right).BBox(&box_right){
+		fmt.Printf("No boudning box in Bvh_node constructor \n")
+	}
+
+	bvh.Box = Surrounding_box(box_left, box_right)
+	
+	return bvh
+	
+}
+
+func box_compare(a, b Hittable, axis int) bool {
+	box_a := NewAABBUninit()
+	box_b := NewAABBUninit()
+	if !a.BBox(&box_a) || !b.BBox(&box_b){
+		fmt.Printf("No boudning box in Bvh_node constructor \n")
+	}
+	return box_a.Min().At(axis) < box_b.Min().At(axis)
+}
+
+func box_x_compare (a, b Hittable) bool {
+    return box_compare(a, b, 0);
+}
+
+func box_y_compare (a, b Hittable) bool {
+    return box_compare(a, b, 1);
+}
+
+func box_z_compare (a, b Hittable) bool {
+    return box_compare(a, b, 2);
+}
+
+func (bvh *BVH_node) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
+	if !bvh.Box.Hit(r, float64(t_min), float64(t_max)){
+		return false
+	}
+	// this is still unclear to me, why do we need to dereference the Left or otherwise we get an error:
+	// bvh.Left.Hit undefined (type *Hittable is pointer to interface, not interface)
+	//
+	// I think this is because bvh.Left is still a pointer 
+	hit_left := (*bvh.Left).Hit(r, t_min, t_max, rec) 
+
+	var tt float32
+	if hit_left{
+		tt = rec.T
+	} else{
+		tt = t_max
+	}
+	hit_right := (*bvh.Right).Hit(r, t_min, tt, rec)
+	return hit_left || hit_right
+}
+
+func (bvh *BVH_node) BBox(output_box *AABB) bool{
+	*output_box = bvh.Box
+	return true
+}
+
+
 // passing pointer to HittableList as we update 
-func (hl *HittableList) 	Add(object Hittable) {
+func (hl *HittableList) Add(object Hittable) {
 	hl.Objects = append(hl.Objects, object)
 	println("world length", len(hl.Objects))
 }

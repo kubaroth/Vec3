@@ -5,9 +5,10 @@
 package raytrace
 
 import (
-	_ "fmt"
+	"fmt"
 	"testing"
 	"math"
+	"sort"
 )
 
 func TestRay1(t *testing.T) {
@@ -189,6 +190,60 @@ func TestSphereBBox(t *testing.T) {
 	if  result != want {
 		t.Errorf(" %v != %v", result, want)
 	}
+}
+
+func TestSortHittables(t *testing.T) {
+	var objects []Hittable
+	objects = append(objects,
+		Sphere{NewVec3(0,0,-1), 1.0},  //
+		Sphere{NewVec3(0,0,-3), 1.0},
+		Sphere{NewVec3(0,2,-1), 1.0},  // same Z as first sphere - check if it is stable
+		Sphere{NewVec3(0,0,-2), 1.0})
+
+	// fmt.Println("Sort Hittables", objects)
+
+	// We just pass custom comparator and dont implement interface for sorting
+	sort.SliceStable(objects, func(i,j int) bool {
+		return box_compare(objects[i], objects[j], 2) // along Z
+	})
+	// fmt.Println("Sort Hittables sorted", objects)
+
+	want := []float32{-4,-3,-2,-2} // we expect BBox.Min.Z values sorted from smallest
+	result := []float32{}
+	for _, o := range objects {
+		aabb := NewAABBUninit()
+		o.BBox(&aabb)
+		result = append(result, aabb.Min().At(2))
+	}
+
+	// compare 2 slices
+	testEq := func (a, b []float32) bool {
+		if len(a) != len(b) {
+			return false
+		}
+		for i := range a {
+			if a[i] != b[i] {
+				return false
+			}
+		}
+		return true
+	}
+
+	if !testEq(result, want) {
+		t.Errorf(" %v != %v", result, want)
+	}
+	
+}
 
 
+func TestBVH(t *testing.T) {
+	bvh := NewBVH()
+	fmt.Println("Sort Hittables sorted", bvh)
+
+	var objects []Hittable
+	objects = append(objects,
+		Sphere{NewVec3(0,0,-1), 1.0},
+		Sphere{NewVec3(0,0,-2), 1.0})
+
+	
 }
