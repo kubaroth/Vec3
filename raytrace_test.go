@@ -240,10 +240,11 @@ func TestBVH(t *testing.T) {
 	bvh := NewBVH()
 	fmt.Println("BVH empty", bvh)
 
-	bvh.Left = NewBVH2()
+	bvh.Left = NewBVH() // Gets inmplicitly converted to Hittable
 	bvh.Right = Sphere{NewVec3(0,0,-1), 0.5}
-	aa:=bvh.Left.(*BVH_node) // type asserion of Hittable to a pointer of BVH_node
-	aa.Left = Sphere{NewVec3(0,0,-2), 1}	
+	// Type assertion back to *BVH_node type as we need to acccess Left/Right fields
+	left := bvh.Left.(*BVH_node)  // Is this safe?
+	left.Left = Sphere{NewVec3(0,0,-2), 1}
 	fmt.Println("BVH left:bvh, right Sphere", bvh.Left)
 
 	// var objects []Hittable

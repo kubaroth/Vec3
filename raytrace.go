@@ -317,12 +317,8 @@ type BVH_node struct {
 	Box AABB
 }
 
+// Returns *BVH_node which, if required, can be casted to Hittable 
 func NewBVH() *BVH_node{
-	temp := BVH_node{nil, nil, NewAABBUninit()}
-	return &temp
-}
-
-func NewBVH2() Hittable{
 	temp := BVH_node{nil, nil, NewAABBUninit()}
 	return &temp
 }
