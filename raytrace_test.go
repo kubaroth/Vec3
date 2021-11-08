@@ -238,12 +238,20 @@ func TestSortHittables(t *testing.T) {
 
 func TestBVH(t *testing.T) {
 	bvh := NewBVH()
-	fmt.Println("Sort Hittables sorted", bvh)
+	fmt.Println("BVH empty", bvh)
 
-	var objects []Hittable
-	objects = append(objects,
-		Sphere{NewVec3(0,0,-1), 1.0},
-		Sphere{NewVec3(0,0,-2), 1.0})
+	bvh.Left = NewBVH2()
+	bvh.Right = Sphere{NewVec3(0,0,-1), 0.5}
+	aa:=bvh.Left.(*BVH_node) // type asserion of Hittable to a pointer of BVH_node
+	aa.Left = Sphere{NewVec3(0,0,-2), 1}	
+	fmt.Println("BVH left:bvh, right Sphere", bvh.Left)
 
-	
+	// var objects []Hittable
+	// objects = append(objects,
+	// 	Sphere{NewVec3(0,0,-1), 1.0},
+	// 	Sphere{NewVec3(0,0,-2), 1.0})
+
+	// fmt.Println("objects", objects)
+	// bvh := NewBVHSplit(objects,0,1)
+	// _ = bvh
 }

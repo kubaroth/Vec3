@@ -313,7 +313,7 @@ func Surrounding_box(box0, box1 AABB) AABB {
 }
 
 type BVH_node struct {
-	Left, Right *Hittable // TOOD: this does not compile if using pointer
+	Left, Right Hittable // I dont think we can have Interface Hittable as Left, Right
 	Box AABB
 }
 
@@ -321,6 +321,12 @@ func NewBVH() *BVH_node{
 	temp := BVH_node{nil, nil, NewAABBUninit()}
 	return &temp
 }
+
+func NewBVH2() Hittable{
+	temp := BVH_node{nil, nil, NewAABBUninit()}
+	return &temp
+}
+
 
 func NewBVHSplit(objects []Hittable, start, end int) *BVH_node{
 
@@ -331,7 +337,7 @@ func NewBVHSplit(objects []Hittable, start, end int) *BVH_node{
 	bvh := NewBVH()
 	
 	axis := RandInt(0,2)
-	_ = axis
+	fmt.Println("BVH axis", axis)
 
 	comparator := box_x_compare
 	if axis == 1 {
@@ -343,15 +349,15 @@ func NewBVHSplit(objects []Hittable, start, end int) *BVH_node{
 	object_span := end - start
 
 	if object_span == 1 {
-		*bvh.Left = objects[start]
-		*bvh.Right = objects[start] // the same
+		bvh.Left = objects[start]
+		bvh.Right = objects[start] // the same
 	} else if object_span == 2 {
 		if comparator(objects[start], objects[start+1]) {
-			*bvh.Left = objects[start]   // * handles pointer to interface errors
-			*bvh.Right = objects[start+1]
+			bvh.Left = objects[start]   // * handles pointer to interface errors
+			bvh.Right = objects[start+1]
 		} else {
-			*bvh.Left = objects[start+1]
-			*bvh.Right = objects[start]
+			bvh.Left = objects[start+1]
+			bvh.Right = objects[start]
 		}
 	} else {
 		sort.SliceStable(objects, func(i,j int) bool {
@@ -359,13 +365,13 @@ func NewBVHSplit(objects []Hittable, start, end int) *BVH_node{
 		})
 
 		mid := start + object_span/2
-		*bvh.Left = NewBVHSplit(objects, start, mid)
-		*bvh.Right = NewBVHSplit(objects, mid, end)
+		bvh.Left = NewBVHSplit(objects, start, mid)
+		bvh.Right = NewBVHSplit(objects, mid, end)
 	}
 
 	box_left := NewAABBUninit()
 	box_right := NewAABBUninit()
-	if !(*bvh.Left).BBox(&box_left) || !(*bvh.Right).BBox(&box_right){
+	if !(bvh.Left).BBox(&box_left) || !(bvh.Right).BBox(&box_right){
 		fmt.Printf("No boudning box in Bvh_node constructor \n")
 	}
 
@@ -395,8 +401,8 @@ func box_y_compare (a, b Hittable) bool {
 func box_z_compare (a, b Hittable) bool {
     return box_compare(a, b, 2);
 }
-
-func (bvh *BVH_node) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
+                     
+func (bvh BVH_node) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
 	if !bvh.Box.Hit(r, float64(t_min), float64(t_max)){
 		return false
 	}
@@ -404,7 +410,7 @@ func (bvh *BVH_node) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
 	// bvh.Left.Hit undefined (type *Hittable is pointer to interface, not interface)
 	//
 	// I think this is because bvh.Left is still a pointer 
-	hit_left := (*bvh.Left).Hit(r, t_min, t_max, rec) 
+	hit_left := (bvh.Left).Hit(r, t_min, t_max, rec) 
 
 	var tt float32
 	if hit_left{
@@ -412,11 +418,11 @@ func (bvh *BVH_node) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
 	} else{
 		tt = t_max
 	}
-	hit_right := (*bvh.Right).Hit(r, t_min, tt, rec)
+	hit_right := (bvh.Right).Hit(r, t_min, tt, rec)
 	return hit_left || hit_right
 }
 
-func (bvh *BVH_node) BBox(output_box *AABB) bool{
+func (bvh BVH_node) BBox(output_box *AABB) bool{
 	*output_box = bvh.Box
 	return true
 }
