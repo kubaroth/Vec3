@@ -333,7 +333,9 @@ func NewBVHSplit(objects []Hittable, start, end int) *BVH_node{
 	bvh := NewBVH()
 	
 	axis := RandInt(0,2)
+	axis = 2 // temp - testing on Z axis
 	fmt.Println("BVH axis", axis)
+	
 
 	comparator := box_x_compare
 	if axis == 1 {

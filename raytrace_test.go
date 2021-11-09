@@ -1,3 +1,6 @@
+// Run single test:
+// go test -run TestBVHSplit
+//
 // Debuging with Delve:
 // dlv test -- -test.run ^TestAABB
 // b TestAABB
@@ -234,9 +237,7 @@ func TestSortHittables(t *testing.T) {
 	}
 	
 }
-
-
-func TestBVH(t *testing.T) {
+func TestBVH1(t *testing.T) {
 	bvh := NewBVH()
 	fmt.Println("BVH empty", bvh)
 
@@ -245,14 +246,22 @@ func TestBVH(t *testing.T) {
 	// Type assertion back to *BVH_node type as we need to acccess Left/Right fields
 	left := bvh.Left.(*BVH_node)  // Is this safe?
 	left.Left = Sphere{NewVec3(0,0,-2), 1}
-	fmt.Println("BVH left:bvh, right Sphere", bvh.Left)
+	fmt.Println("bvh->Left->Left:", bvh.Left)
+}
 
-	// var objects []Hittable
-	// objects = append(objects,
-	// 	Sphere{NewVec3(0,0,-1), 1.0},
-	// 	Sphere{NewVec3(0,0,-2), 1.0})
+func TestBVHSplit(t *testing.T) {
+	var objects []Hittable
+	objects = append(objects,
+		Sphere{NewVec3(0,0,-1), 1.0},
+		Sphere{NewVec3(0,0,-2), 1.0},
+	    Sphere{NewVec3(0,0,-3), 1.0})
 
-	// fmt.Println("objects", objects)
-	// bvh := NewBVHSplit(objects,0,1)
-	// _ = bvh
+	fmt.Println("objects:", objects)
+	bvh := NewBVHSplit(objects,0,len(objects))
+	sphere, ok := bvh.Right.(*BVH_node)
+	s1, ok := sphere.Left.(Hittable)
+	fmt.Println("bvh right,left:", ok, s1)
+	s1, ok = sphere.Right.(Hittable)
+	fmt.Println("bvh right,right:", ok, s1)
+
 }
