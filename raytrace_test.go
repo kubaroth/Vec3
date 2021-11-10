@@ -259,18 +259,22 @@ func TestBVHSplit(t *testing.T) {
 	fmt.Println("objects:", objects)
 	bvh := NewBVHSplit(objects,0,len(objects))
 
-	printType := func(h Hittable){
+	printType := func(h Hittable) Hittable{
 		switch n := h.(type){
 			case *BVH_node:
 			fmt.Println("*BVH_node")
+			return n
 			case Hittable:
 			fmt.Println("Hittable", n)
+			return n
 		}
+		return nil
 	}
 
 	printType(bvh)
 	node, ok := bvh.Left.(*BVH_node)
-	printType(node.Left)
+	sphere := printType(node.Left)
+	fmt.Println("Sphere", sphere.(Sphere).Center)
 	printType(node.Right)
 	node, ok = bvh.Right.(*BVH_node)
 	printType(node.Left)
