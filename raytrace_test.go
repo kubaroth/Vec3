@@ -252,16 +252,16 @@ func TestBVH1(t *testing.T) {
 func TestBVHSplit(t *testing.T) {
 	var objects []Hittable
 	objects = append(objects,
-		Sphere{NewVec3(0,0,-1), 1.0},
-		Sphere{NewVec3(0,0,-2), 1.0},
-	    Sphere{NewVec3(0,0,-3), 1.0})
+		Sphere{NewVec3(-1,-1,-1), 1.0},
+		Sphere{NewVec3(-2,-2,-2), 1.0},
+	    Sphere{NewVec3(-3,-3,-3), 1.0})
 
 	fmt.Println("objects:", objects)
 	bvh := NewBVHSplit(objects,0,len(objects))
-	sphere, ok := bvh.Right.(*BVH_node)
-	s1, ok := sphere.Left.(Hittable)
-	fmt.Println("bvh right,left:", ok, s1)
-	s1, ok = sphere.Right.(Hittable)
-	fmt.Println("bvh right,right:", ok, s1)
+	right, ok := bvh.Right.(*BVH_node)
+	hittable, ok := right.Left.(Hittable)
+	fmt.Println("bvh right,left:", ok, hittable)
+	hittable, ok = right.Right.(Hittable)
+	fmt.Println("bvh right,right:", ok, hittable)
 
 }
