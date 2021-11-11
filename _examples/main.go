@@ -90,8 +90,8 @@ func write_color(cd Vec3, samples int) color.RGBA {
 	return color.RGBA{uint8(R*255), uint8(G*255), uint8(B*255), 255}	
 }
 
-// func ray_color(r *Ray, world HittableList) Vec3 {
-func ray_color(r *Ray, world *BVH_node) Vec3 {
+func ray_color(r *Ray, world HittableList) Vec3 {
+// func ray_color(r *Ray, world *BVH_node) Vec3 {
 	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true, -1}
 	hit := world.Hit(r, 0, float32(math.Inf(1.0)), &rec)
 	
@@ -142,14 +142,14 @@ func main() {
 		panic(err)
 	}
 
-	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 2000)
+	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 200)
 
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{cam.Width, cam.Height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	start := time.Now()
-	samples := 16
+	samples := 1
 
 	var wg sync.WaitGroup; _ = wg
 	// wg.Add(cam.Height)
@@ -167,8 +167,8 @@ func main() {
 				v := (float32(j) + RandFloat()) / float32(cam.Height-1)
 				ray := cam.GetRay(u,v)
 				
-				pixel_color = pixel_color.Add(ray_color(&ray, bvh)) // BVH scene
-				// pixel_color = pixel_color.Add(ray_color(&ray, world))  // flat list scene
+				// pixel_color = pixel_color.Add(ray_color(&ray, bvh)) // BVH scene
+				pixel_color = pixel_color.Add(ray_color(&ray, world))  // flat list scene
 			}
 			px_cd := write_color(pixel_color, samples)
 			img.SetRGBA(i, cam.Height-j, px_cd)
