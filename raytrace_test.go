@@ -311,3 +311,37 @@ func TestBVHBox(t *testing.T) {
 		t.Errorf(" %v != %v", bvh.Box.Max(), want)
 	}
 }
+func TestBVHHit(t *testing.T) {
+	var objects []Hittable
+
+	objects = append(objects,
+		Sphere{NewVec3(0,0,1), 1.0},
+		Sphere{NewVec3(0,0,2), 1.0},
+		Sphere{NewVec3(0,0,3), 1.0})
+	bvh := NewBVHSplit(objects,0,len(objects))
+	ray := NewRay(NewVec3(0,0,-1), NewVec3(0,0,1))
+	rec := HitRecord{NewVec3(0,0,0), NewVec3(0,0,0), 1.0, true, -1}
+	bvh.Hit(&ray,0, float32(math.Inf(1.0)), &rec)
+	if rec.T != 1.0 {
+		t.Errorf("ray %v does not hit sphere %v", ray, objects[0])
+	}
+
+	objects = append(objects,
+		Sphere{NewVec3(0,0,1), 1.0},
+		Sphere{NewVec3(0,2,2), 1.0},
+		Sphere{NewVec3(0,4,3), 1.0})
+	bvh = NewBVHSplit(objects,0,len(objects))
+
+	ray = NewRay(NewVec3(0,2,-1), NewVec3(0,0,1))
+	bvh.Hit(&ray,0, float32(math.Inf(1.0)), &rec)  // reuse rec Hitrecord
+	if rec.T != 2.0 {
+		t.Errorf("ray %v does not hit sphere %v", ray, objects[1])
+	}
+
+	ray = NewRay(NewVec3(0,4,-1), NewVec3(0,0,1))
+	bvh.Hit(&ray,0, float32(math.Inf(1.0)), &rec) // reuse rec Hitrecord
+	if rec.T != 3.0 {
+		t.Errorf("ray %v does not hit sphere %v", ray, objects[2])
+	}
+
+}
