@@ -285,3 +285,29 @@ func TestBVHSplit(t *testing.T) {
 	}
 
 }
+
+func TestBVHBox(t *testing.T) {
+	var objects []Hittable
+	objects = append(objects,
+		Sphere{NewVec3(-1,-1,-1), 1.0})
+
+	fmt.Println("objects:", objects)
+	bvh := NewBVHSplit(objects,0,len(objects))
+
+	want := NewVec3(-2,-2,-2)
+	if !bvh.Box.Min().Equal(want) {
+		t.Errorf(" %v != %v", bvh.Box.Min(), want)
+	}
+	want = NewVec3(0,0,0)
+	if !bvh.Box.Max().Equal(want) {
+		t.Errorf(" %v != %v", bvh.Box.Max(), want)
+	}
+	objects = append(objects,
+		Sphere{NewVec3(-1,-1,-1), 1.0},
+		Sphere{NewVec3(0,0,0), 1.0})
+	bvh = NewBVHSplit(objects,0,len(objects))
+	want = NewVec3(1,1,1)
+	if !bvh.Box.Max().Equal(want) {
+		t.Errorf(" %v != %v", bvh.Box.Max(), want)
+	}
+}
