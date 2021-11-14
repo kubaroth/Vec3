@@ -19,6 +19,7 @@ import (
 	"time"
 	"flag"
 	"runtime/pprof"
+	"sync"
 )
 
 
@@ -66,7 +67,14 @@ func main() {
 	start := time.Now()
 	samples := 1
 
-	for j := 0; j < cam.Height; j++ {		
+	var wg sync.WaitGroup; _ = wg
+	wg.Add(cam.Height)
+	
+	for j := 0; j < cam.Height; j++ {
+
+		go func(j int) {
+		defer wg.Done()
+		
 		_ = samples
 		for i := 0; i < cam.Width; i++ {
 
@@ -85,7 +93,11 @@ func main() {
 			img.SetRGBA(i, cam.Height-j, px_cd)
 
 		}
+
+		}(j)
 	}
+
+	wg.Wait()
 	
 	fmt.Println("time", time.Since(start))
 
