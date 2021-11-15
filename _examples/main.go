@@ -40,6 +40,11 @@ func main() {
 	world.Add(Sphere{NewVec3(0,0,-1), 0.5})
 	world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
 	_ = world
+
+	// Enable this to see BVH culling in action. 5sec vs 28sec for []Hittablelist
+	// for i:=0; i<500; i++ {
+	// 	world.Add(Sphere{NewVec3(0,float32(i)/10., float32(i + 1)), 0.5})
+	// }
 	
 	bvh := NewBVHSplit(world.Objects,0,len(world.Objects))
 	_ = bvh
