@@ -2,6 +2,7 @@ package raytrace
 
 import(
 	"fmt"
+	"image"
 	"image/color"
 	"math"
 )
@@ -104,4 +105,39 @@ func RayColorBVH(r *Ray, world *BVH_node) Vec3 {
 	sky := NewVec3(0.5, 0.7, 1.0).MultF(t)
 	sky = sky.Add(NewVec3(1, 1, 1).MultF(1 - t))
 	return sky
+}
+
+func Render(cam Camera, samples int, world *HittableList, bvh *BVH_node) *image.RGBA {
+
+	upLeft := image.Point{0, 0}
+	lowRight := image.Point{cam.Width, cam.Height}
+	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
+
+	for j := 0; j < cam.Height; j++ {
+		_ = samples
+		for i := 0; i < cam.Width; i++ {
+
+			pixel_color := NewVec3(0,0,0); _ = pixel_color
+			for s:=0; s < samples; s++ {
+				rr := RandFloat()
+				u := (float32(i) + rr) / float32(cam.Width-1)
+				v := (float32(j) + rr) / float32(cam.Height-1)
+				_, _ = u, v
+				ray := cam.GetRay(u,v)
+
+				if bvh != nil {
+					pixel_color = pixel_color.Add(RayColorBVH(&ray, bvh)) // BVH scene
+				} else {
+					pixel_color = pixel_color.Add(RayColorArray(&ray, *world))  // flat list scene
+				}
+			}
+			px_cd := Write_color(pixel_color, samples)
+			// _ = px_cd
+			img.SetRGBA(i, cam.Height-j, px_cd)
+
+		}
+	}
+
+	return img
+
 }

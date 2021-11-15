@@ -65,7 +65,7 @@ func main() {
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	start := time.Now()
-	samples := 1
+	samples := 16
 
 	var wg sync.WaitGroup; _ = wg
 	wg.Add(cam.Height)
@@ -80,7 +80,7 @@ func main() {
 
 			pixel_color := NewVec3(0,0,0); _ = pixel_color
 			for s:=0; s < samples; s++ {
-				rr := RandFloat() // calc ones improves paralell version
+				rr := RandFloat() // calc once improves paralell version 
 				u := (float32(i) + rr) / float32(cam.Width-1)
 				v := (float32(j) + rr) / float32(cam.Height-1)
 				_, _ = u, v

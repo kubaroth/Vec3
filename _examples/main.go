@@ -13,7 +13,6 @@ import (
 	. "github.com/kubaroth/Vec3"
 	"errors"
 	"fmt"
-	"image"
 	"image/png"
 	"os"
 	"time"
@@ -63,34 +62,11 @@ func main() {
 	}
 
 	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 2000)
-
-	upLeft := image.Point{0, 0}
-	lowRight := image.Point{cam.Width, cam.Height}
-	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
-
-	start := time.Now()
 	samples := 1
-
-	for j := 0; j < cam.Height; j++ {		
-		_ = samples
-		for i := 0; i < cam.Width; i++ {
-
-			pixel_color := NewVec3(0,0,0); _ = pixel_color
-			for s:=0; s < samples; s++ {
-				rr := RandFloat() // calc ones improves paralell version
-				u := (float32(i) + rr) / float32(cam.Width-1)
-				v := (float32(j) + rr) / float32(cam.Height-1)
-				_, _ = u, v
-				ray := cam.GetRay(u,v)
-				// pixel_color = pixel_color.Add(RayColorBVH(&ray, bvh)) // BVH scene
-				pixel_color = pixel_color.Add(RayColorArray(&ray, world))  // flat list scene
-			}
-			px_cd := Write_color(pixel_color, samples)
-			// _ = px_cd
-			img.SetRGBA(i, cam.Height-j, px_cd)
-
-		}
-	}
+	
+	start := time.Now()
+	
+	img := Render(cam, samples, &world, nil)  // pass bvh instead of nil to use BVH_node container
 	
 	fmt.Println("time", time.Since(start))
 
