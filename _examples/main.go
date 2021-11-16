@@ -1,5 +1,5 @@
 // A driver test program
-// to debu: go build -gcflags="all=-N -l" main.go
+// to debug: go build -gcflags="all=-N -l" main.go
 //
 // Profiling:
 // $ go build
@@ -18,6 +18,7 @@ import (
 	"time"
 	"flag"
 	"runtime/pprof"
+	"sync"
 )
 
 
@@ -26,14 +27,14 @@ var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
 func main() {
 	flag.Parse()
-    if *cpuprofile != "" {
-        f, err := os.Create(*cpuprofile)
-        if err != nil {
-            fmt.Println(err)
-        }
-        pprof.StartCPUProfile(f)
-        defer pprof.StopCPUProfile()
-    }
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			fmt.Println(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	world := HittableList{}
 	world.Add(Sphere{NewVec3(0,0,-1), 0.5})
@@ -48,31 +49,43 @@ func main() {
 	bvh := NewBVHSplit(world.Objects,0,len(world.Objects))
 	_ = bvh
 
-	
-	path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		path = "img.png"
-	}
-	
-	fmt.Println("saving into:", path)
-
-	f, err := os.Create(path)
-	if err != nil {
-		panic(err)
-	}
 
 	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 2000)
 	samples := 1
 	
 	start := time.Now()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
 	
-	img := Render(cam, samples, &world, nil)  // pass bvh instead of nil to use BVH_node container
+	go func() {
+
+		defer wg.Done()
+		img := Render(cam, samples, &world, nil)  // pass bvh instead of nil to use BVH_node container
+
+		// saving png
+
+		path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
+		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+			path = "img.png"
+		}
 	
+		fmt.Println("saving into:", path)
+
+		f, err := os.Create(path)
+		if err != nil {
+			panic(err)
+		}
+	
+		defer f.Close()
+		if err = png.Encode(f, img); err != nil {
+			fmt.Printf("failed to encode: %v", err)
+		}
+
+	}()
+
+	fmt.Println("\nWaiting...")
+	wg.Wait()
+
 	fmt.Println("time", time.Since(start))
-
-	defer f.Close()
-	if err = png.Encode(f, img); err != nil {
-		fmt.Printf("failed to encode: %v", err)
-	}
-
 }

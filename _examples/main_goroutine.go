@@ -1,5 +1,5 @@
 // A driver test program
-// to debu: go build -gcflags="all=-N -l" main.go
+// to debug: go build -gcflags="all=-N -l" main.go
 //
 // Profiling:
 // $ go build
