@@ -107,14 +107,32 @@ func RayColorBVH(r *Ray, world *BVH_node) Vec3 {
 	return sky
 }
 
-func Render(cam Camera, samples int, world *HittableList, bvh *BVH_node) *image.RGBA {
+func Render(cam Camera, samples int, world *HittableList, bvh *BVH_node, done chan int) *image.RGBA {
 
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{cam.Width, cam.Height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
+	// drain the done channel before we start
+L:
+	for {
+		select {
+		case <-done:
+		default:
+			break L
+		}
+	}
+
+	
 	for j := 0; j < cam.Height; j++ {
-		_ = samples
+		select {
+
+		case <-done: // send interrupt signal to  Render()
+			fmt.Println("Interrupt rendering")
+			return img
+
+		default: // continue with standard inner loop
+
 		for i := 0; i < cam.Width; i++ {
 
 			pixel_color := NewVec3(0,0,0); _ = pixel_color
@@ -132,12 +150,12 @@ func Render(cam Camera, samples int, world *HittableList, bvh *BVH_node) *image.
 				}
 			}
 			px_cd := Write_color(pixel_color, samples)
-			// _ = px_cd
 			img.SetRGBA(i, cam.Height-j, px_cd)
 
 		}
+
+		} // end of select
 	}
 
 	return img
-
 }

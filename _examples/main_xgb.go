@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"image/png"
 	"os"
-	"sync"
+_	"sync"
 
 	
 	"time"
@@ -44,8 +44,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-
-func renderSetup(){
+func renderSetup(done chan int){
 
 	world := HittableList{}
 	world.Add(Sphere{NewVec3(0,0,-1), 0.5})
@@ -61,48 +60,34 @@ func renderSetup(){
 	_ = bvh
 
 
-	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 200)
-	samples := 1
+	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 2000)
+	samples := 16
 	
 	start := time.Now()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+	img := Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
+
+	// saving png
+
+	path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		path = "img.png"
+	}
 	
-	go func() {
+	fmt.Println("saving into:", path)
 
-		defer wg.Done()
-		img := Render(cam, samples, &world, nil)  // pass bvh instead of nil to use BVH_node container
-
-		// saving png
-
-		path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
-		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-			path = "img.png"
-		}
+	f, err := os.Create(path)
+	if err != nil {
+		panic(err)
+	}
 	
-		fmt.Println("saving into:", path)
-
-		f, err := os.Create(path)
-		if err != nil {
-			panic(err)
-		}
-	
-		defer f.Close()
-		if err = png.Encode(f, img); err != nil {
-			fmt.Printf("failed to encode: %v", err)
-		}
-
-	}()
-
-	fmt.Println("\nWaiting...")
-	wg.Wait()
+	defer f.Close()
+	if err = png.Encode(f, img); err != nil {
+		fmt.Printf("failed to encode: %v", err)
+	}
 
 	fmt.Println("time", time.Since(start))
 }
-
-
-
 
 
 // newWindow creates a new window with a random background color. It sets the
@@ -149,20 +134,6 @@ func newWindow(X *xgbutil.XUtil) *xwindow.Window {
 	// the WM isn't obliged to watch updates to the WM_PROTOCOLS property.
 	win.Map()
 
-	// A mouse binding so that a left click will spawn a new window.
-	// Note that we don't issue a grab here. Typically, window managers will
-	// grab a button press on the client window (which usually activates the
-	// window), so that we'd end up competing with the window manager if we
-	// tried to grab it.
-	// Instead, we set a ButtonRelease mask when creating the window and attach
-	// a mouse binding *without* a grab.
-	err = mousebind.ButtonReleaseFun(
-		func(X *xgbutil.XUtil, ev xevent.ButtonReleaseEvent) {
-			newWindow(X)
-		}).Connect(X, win.Id, "1", false, false)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	return win
 }
@@ -198,7 +169,6 @@ func main(){
 	// 	},
 	// 	func(X *xgbutil.XUtil, rx, ry, ex, ey int) {
 	// 		// log.Println("painting", rx, ry)
-	// 		paint(canvas, win, rx, ry, prev_rx, prev_ry)
 	// 		prev_rx = rx
 	// 		prev_ry = ry
 
@@ -207,12 +177,9 @@ func main(){
 	// 		log.Println("release", rx, ry)
 	// 		bounds.Max.X = rx
 	// 		bounds.Max.Y = ry
-	// 		// push on the undo stack
-	// 		undo_step := make([]byte, len(canvas.Pix))
-	// 		copy(undo_step, canvas.Pix)
-	// 		SETTINGS.undos = append(SETTINGS.undos, undo_step)
-
 	// 	})
+
+	done := make(chan int)
 
 	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
@@ -224,13 +191,26 @@ func main(){
 			win.Destroy()
 			xevent.Quit(X)
 
-		}).Connect(X, win.Id, "Escape", true)
+			// close the done chanell on exit
+			close(done)
 
+		}).Connect(X, win.Id, "Escape", true)
+	
 	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
 			fmt.Println("Rendering...")
-			renderSetup()
+			go func(){
+				renderSetup(done)
+			}()
 		}).Connect(X, win.Id, "bracketright", true)
+
+	keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			fmt.Println("cancelling...")
+			go func(){
+				done <- 1
+			}()
+		}).Connect(X, win.Id, "bracketleft", true)
 
 	if err != nil {
 		log.Fatal(err)

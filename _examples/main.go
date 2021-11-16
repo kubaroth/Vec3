@@ -61,7 +61,8 @@ func main() {
 	go func() {
 
 		defer wg.Done()
-		img := Render(cam, samples, &world, nil)  // pass bvh instead of nil to use BVH_node container
+		done := make(chan int)
+		img := Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
 
 		// saving png
 
