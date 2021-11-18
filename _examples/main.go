@@ -18,7 +18,7 @@ import (
 	"time"
 	"flag"
 	"runtime/pprof"
-	"sync"
+_	"sync"
 )
 
 
@@ -55,38 +55,30 @@ func main() {
 	
 	start := time.Now()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
+
+	done := make(chan int)
+	img := Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
+
+	// saving png
+
+	path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		path = "img.png"
+	}
 	
-	go func() {
+	fmt.Println("\nsaving into:", path)
 
-		defer wg.Done()
-		done := make(chan int)
-		img := Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
-
-		// saving png
-
-		path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
-		if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-			path = "img.png"
-		}
+	f, err := os.Create(path)
+	if err != nil {
+		panic(err)
+	}
 	
-		fmt.Println("saving into:", path)
+	defer f.Close()
+	if err = png.Encode(f, img); err != nil {
+		fmt.Printf("failed to encode: %v", err)
+	}
 
-		f, err := os.Create(path)
-		if err != nil {
-			panic(err)
-		}
-	
-		defer f.Close()
-		if err = png.Encode(f, img); err != nil {
-			fmt.Printf("failed to encode: %v", err)
-		}
-
-	}()
-
-	fmt.Println("\nWaiting...")
-	wg.Wait()
+	fmt.Println("Waiting...")
 
 	fmt.Println("time", time.Since(start))
 }

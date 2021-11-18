@@ -38,18 +38,15 @@ _	"github.com/BurntSushi/xgb"
 )
 
 var counter int32
+var world HittableList
 
 // Just iniaitlize the RNG seed for generating random background colors.
 func init() {
 	rand.Seed(time.Now().UnixNano())
+	world = HittableList{}
 }
 
-func renderSetup(done chan int){
-
-	world := HittableList{}
-	world.Add(Sphere{NewVec3(0,0,-1), 0.5})
-	world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
-	_ = world
+func renderSetup(world HittableList, done chan int){
 
 	// Enable this to see BVH culling in action. 5sec vs 28sec for []Hittablelist
 	// for i:=0; i<500; i++ {
@@ -200,7 +197,9 @@ func main(){
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
 			fmt.Println("Rendering...")
 			go func(){
-				renderSetup(done)
+				world.Add(Sphere{NewVec3(0,0,-1), 0.5})
+				world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
+				renderSetup(world, done)
 			}()
 		}).Connect(X, win.Id, "bracketright", true)
 
@@ -212,6 +211,17 @@ func main(){
 			}()
 		}).Connect(X, win.Id, "bracketleft", true)
 
+	keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			fmt.Println("key P was pressed...")
+			go func(){
+				world.Objects = nil // clear the slice
+				world.Add(Sphere{NewVec3(0,0,-1), 0.5}) // add only a single sphere
+				renderSetup(world, done)
+			}()
+
+		}).Connect(X, win.Id, "p", true)
+	
 	if err != nil {
 		log.Fatal(err)
 	}

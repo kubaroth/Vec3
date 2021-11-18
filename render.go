@@ -113,7 +113,8 @@ func Render(cam Camera, samples int, world *HittableList, bvh *BVH_node, done ch
 	lowRight := image.Point{cam.Width, cam.Height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
-	// drain the done channel before we start
+	// drain the done channel before we start. This prevents cancelling immediately
+	// if there are multiple done signals queued up.
 L:
 	for {
 		select {
