@@ -110,6 +110,9 @@ func (r Ray) At(t float32) Vec3 {
 	return r.Orig.Add(r.Dir.MultF(t))
 }
 
+// Not the global rand.Rand instance has a mutex and needs to be initialize outside
+// the short-lived goroutine
+// https://stackoverflow.com/questions/14298523/why-does-adding-concurrency-slow-down-this-golang-code
 func RandFloat() float32 {
 	return rand.Float32()
 }

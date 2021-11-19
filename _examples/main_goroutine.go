@@ -69,18 +69,23 @@ func main() {
 
 	var wg sync.WaitGroup; _ = wg
 	wg.Add(cam.Height)
+
+	rand_seeds := make([]float32, samples)
+	for i:=0; i<samples; i++ {
+		rand_seeds[i] = RandFloat()
+	}
 	
 	for j := 0; j < cam.Height; j++ {
 
 		go func(j int) {
 		defer wg.Done()
-		
-		_ = samples
+
+
 		for i := 0; i < cam.Width; i++ {
 
 			pixel_color := NewVec3(0,0,0); _ = pixel_color
 			for s:=0; s < samples; s++ {
-				rr := RandFloat() // calc once improves paralell version 
+				rr := rand_seeds[s]  // reuse rand and avoids global lock!
 				u := (float32(i) + rr) / float32(cam.Width-1)
 				v := (float32(j) + rr) / float32(cam.Height-1)
 				_, _ = u, v
