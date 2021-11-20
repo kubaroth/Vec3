@@ -13,6 +13,7 @@ import (
 	. "github.com/kubaroth/Vec3"
 	"errors"
 	"fmt"
+	"image"
 	"image/png"
 	"os"
 	"time"
@@ -49,17 +50,11 @@ func main() {
 	bvh := NewBVHSplit(world.Objects,0,len(world.Objects))
 	_ = bvh
 
-
 	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 2000)
-	samples := 1
+	samples := 16
 	
 	start := time.Now()
 
-
-	done := make(chan int)
-	img := Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
-
-	// saving png
 
 	path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
@@ -72,6 +67,24 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+
+	done := make(chan int)
+
+	// Option 2 - outer sample loop
+	upLeft := image.Point{0, 0}
+	lowRight := image.Point{cam.Width, cam.Height}
+	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
+	// img = RenderSamples(cam, samples, &world, nil, done, f, img) // TODO
+	img = RenderSamples(cam, samples, &world, nil, done)
+
+
+	// Option 1 - inner sample loop
+	// img = Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
+
+	
+	// saving png
+
 	
 	defer f.Close()
 	if err = png.Encode(f, img); err != nil {
