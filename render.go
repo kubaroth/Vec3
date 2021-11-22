@@ -173,6 +173,8 @@ func RenderSamples(cam Camera, samples int, world *HittableList, bvh *BVH_node, 
 	lowRight := image.Point{cam.Width, cam.Height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
+	// To avoid quantization, accumulate results in the Vec3 (instead uint8)
+	imgVec3 := make([]Vec3, cam.Width * cam.Height)
 	
 	// drain the done channel before we start. This prevents cancelling immediately
 	// if there are multiple done signals queued up.
@@ -185,7 +187,7 @@ L:
 		}
 	}
 
-	for s:=0; s < samples; s++ {
+	for sample_num:=0; sample_num < samples; sample_num++ {
 
 		for j := 0; j < cam.Height; j++ {
 			select {
@@ -197,10 +199,8 @@ L:
 			default: // continue with standard inner loop
 
 				for i := 0; i < cam.Width; i++ {
-
-					px_cd := img.RGBAAt(i, cam.Height-j)
-					pixel_color := NewVec3(float32(px_cd.R)/255.0, float32(px_cd.G)/255.0, float32(px_cd.B)/255.0) 
-
+					pixel_color := imgVec3[cam.Width*j + i]
+					
 					rr := RandFloat()
 					u := (float32(i) + rr) / float32(cam.Width-1)
 					v := (float32(j) + rr) / float32(cam.Height-1)
@@ -213,25 +213,27 @@ L:
 						pixel_color = pixel_color.Add(RayColorArray(&ray, *world))  // flat list scene
 					}
 
-					if s == 0 { // on the first sample dont multiply by the previous color value (which has not been set yet)
-						px_cd = Write_color(pixel_color, 1)
-					} else {
-						// TODO: blending is still not working - with more then 1 sample still looks like sample 1
-						px_cd = Write_color(pixel_color, 2) // use 2 sample as we just average with previous value
-					}
-					
-					img.SetRGBA(i, cam.Height-j, px_cd)
-					
+					imgVec3[cam.Width*j + i] = pixel_color
 				}
 			} // end of select
+
 		}
+
+		for j := 0; j < cam.Height; j++ {
+			for i := 0; i < cam.Width; i++ {
+				pixel_color := imgVec3[(cam.Width-0)*j + i];
+				px_cd := Write_color(pixel_color, sample_num) // divice color by total number of sumples so far
+				img.SetRGBA(i, cam.Height-j, px_cd)
+			}
+		}
+
 		// time.Sleep(5 * time.Second)
 		
 		// if err := png.Encode(f, img); err != nil {
 		// 	fmt.Printf("failed to encode: %v", err)
 		// }
 
-		fmt.Println("sample", s)
+		fmt.Println("sample", sample_num)
 	}
 
 	return img
