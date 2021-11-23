@@ -1,3 +1,6 @@
+// In this exmaple we save a new png on each sample update
+//
+//
 // A driver test program
 // to debug: go build -gcflags="all=-N -l" main.go
 //
@@ -14,7 +17,7 @@ import (
 	"errors"
 	"fmt"
 _	"image"
-	"image/png"
+_	"image/png"
 	"os"
 	"time"
 	"flag"
@@ -65,20 +68,8 @@ func main() {
 
 	done := make(chan int)
 
-	// Option 1 - inner sample loop
-	img := Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
-
-	
-	// saving png
-	f, err := os.Create(path)
-	if err != nil {
-		panic(err)
-	}
-
-	defer f.Close()
-	if err = png.Encode(f, img); err != nil {
-		fmt.Printf("failed to encode: %v", err)
-	}
+	// Option 2 - outer sample loop
+	RenderSamples(cam, samples, &world, nil, done, path)
 
 	fmt.Println("Waiting...")
 

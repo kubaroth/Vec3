@@ -1,3 +1,7 @@
+// An example demonstrating how to split computation into separate goroutines for each row
+// To keep things simple we don't pay much attention to thread oversubsription, hoping the
+// Go's runtime will handle this for us.
+//
 // A driver test program
 // to debug: go build -gcflags="all=-N -l" main.go
 //

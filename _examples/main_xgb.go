@@ -1,14 +1,14 @@
+// An example which sets up a GUI windows with using xgb (X11).
+// A new window listen for keyboard input.
+// ] - starts slow render
+// [ - interrupts render and saves the image
+// Esc - exits
+
+
 // Get dependencies for this example:
 // go get -v -u ...
 // go build ./main_xgb.go
 // ./main_xgb
-
-
-// Example create-window shows how to create a window, map it, resize it,
-// and listen to structure and key events (i.e., when the window is resized
-// by the window manager, or when key presses/releases are made when the
-// window has focus). The events are printed to stdout.
-
 
 package main
 

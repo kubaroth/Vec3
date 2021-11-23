@@ -4,10 +4,9 @@ import(
 	"fmt"
 	"image"
 	"image/color"
-_	"image/png"
+	"image/png"
 	"math"
-_	"os"
-_	"time"
+	"os"
 )
 
 type Camera struct{
@@ -110,7 +109,10 @@ func RayColorBVH(r *Ray, world *BVH_node) Vec3 {
 	return sky
 }
 
-// Option 1 - inner sample loop
+// Inner sample render loop
+// The standard render function where samples are generated in the inner loop.
+// This has a simpler structure then the RenderSamples() but we cannot update
+// entire image sooner.
 func Render(cam Camera, samples int, world *HittableList, bvh *BVH_node, done chan int) *image.RGBA {
 
 	upLeft := image.Point{0, 0}
@@ -165,13 +167,17 @@ L:
 	return img
 }
 
-// Option 2 - outer sample loop
-// Move samples out of the inner loop - to be able to save image every sample update
-func RenderSamples(cam Camera, samples int, world *HittableList, bvh *BVH_node, done chan int) *image.RGBA { //  f *os.File, img *image.RGBA) *image.RGBA {
+
+// In this render loop the iteration over samples is moved into the outer loop
+// This allows us to save image/png every sample update
+// The downside is to keep separate array with Vec3 to keep float color values instead of uint8
+// to avoid quantization during consecutive iterations.
+func RenderSamples(cam Camera, samples int, world *HittableList, bvh *BVH_node, done chan int, path string) *image.RGBA {
 
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{cam.Width, cam.Height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
+
 
 	// To avoid quantization, accumulate results in the Vec3 (instead uint8)
 	imgVec3 := make([]Vec3, cam.Width * cam.Height)
@@ -187,7 +193,8 @@ L:
 		}
 	}
 
-	for sample_num:=0; sample_num < samples; sample_num++ {
+	// start samples from 1 not 0 as we need to avoid division by 0 in the first run
+	for sample_num:=1; sample_num <= samples; sample_num++ {
 
 		for j := 0; j < cam.Height; j++ {
 			select {
@@ -219,20 +226,26 @@ L:
 
 		}
 
-		for j := 0; j < cam.Height; j++ {
-			for i := 0; i < cam.Width; i++ {
-				pixel_color := imgVec3[(cam.Width-0)*j + i];
-				px_cd := Write_color(pixel_color, sample_num) // divice color by total number of sumples so far
-				img.SetRGBA(i, cam.Height-j, px_cd)
+		// save png in a separate thread
+		go func(){
+			for j := 0; j < cam.Height; j++ {
+				for i := 0; i < cam.Width; i++ {
+					pixel_color := imgVec3[(cam.Width-0)*j + i];
+					px_cd := Write_color(pixel_color, sample_num) // divide color by total number of sumples so far
+					img.SetRGBA(i, cam.Height-j, px_cd)
+				}
 			}
-		}
 
-		// time.Sleep(5 * time.Second)
+			f, err := os.Create(path) // TODO: this at the moment stops over image saved in the previous run by the previous goroutine
+			if err != nil {
+				panic(err)
+			}
+			if err := png.Encode(f, img); err != nil {
+				fmt.Printf("failed to encode: %v", err)
+			}
+			f.Close()
+		}()
 		
-		// if err := png.Encode(f, img); err != nil {
-		// 	fmt.Printf("failed to encode: %v", err)
-		// }
-
 		fmt.Println("sample", sample_num)
 	}
 
