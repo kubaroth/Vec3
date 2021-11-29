@@ -3,6 +3,8 @@
 // ] - starts slow render
 // [ - interrupts render and saves the image
 // Esc - exits
+// w - move camera forward
+// s - move camera backward
 
 
 // Get dependencies for this example:
@@ -46,7 +48,7 @@ func init() {
 	world = HittableList{}
 }
 
-func renderSetup(world HittableList, done chan int, X *xgbutil.XUtil, win *xwindow.Window){
+func renderSetup(cam Camera, world HittableList, done chan int, X *xgbutil.XUtil, win *xwindow.Window){
 
 	// Enable this to see BVH culling in action. 5sec vs 28sec for []Hittablelist
 	// for i:=0; i<500; i++ {
@@ -57,7 +59,6 @@ func renderSetup(world HittableList, done chan int, X *xgbutil.XUtil, win *xwind
 	_ = bvh
 
 
-	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 400)
 	samples := 1
 	
 	start := time.Now()
@@ -151,12 +152,8 @@ func main(){
 	}
 	mousebind.Initialize(X)
 	keybind.Initialize(X)
-
 	
 	win := newWindow(X)
-
-
-	// win := canvas.XShowExtra("Select area to capture", true)
 
 	err = mousebind.ButtonPressFun(
 		func(X *xgbutil.XUtil, e xevent.ButtonPressEvent) {
@@ -186,6 +183,10 @@ func main(){
 	// 	})
 
 	done := make(chan int)
+	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 400)
+	// TODO: Include into camera samples
+	//       Rethink how to rework camera struct to make update its state simpler
+
 
 	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
@@ -201,15 +202,19 @@ func main(){
 			close(done)
 
 		}).Connect(X, win.Id, "Escape", true)
+
+	first_run := func(){
+		world.Add(Sphere{NewVec3(0,0,-1), 0.5})
+		world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
+		renderSetup(cam, world, done, X, win)
+	}
+	first_run()
 	
 	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
 			fmt.Println("Rendering...")
-			go func(){
-				world.Add(Sphere{NewVec3(0,0,-1), 0.5})
-				world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
-				renderSetup(world, done, X, win)
-			}()
+			first_run()
+
 		}).Connect(X, win.Id, "bracketright", true)
 
 	keybind.KeyPressFun(
@@ -220,16 +225,41 @@ func main(){
 			}()
 		}).Connect(X, win.Id, "bracketleft", true)
 
+	// A test with different number of objects in the scene
 	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
 			fmt.Println("key P was pressed...")
 			go func(){
 				world.Objects = nil // clear the slice
 				world.Add(Sphere{NewVec3(0,0,-1), 0.5}) // add only a single sphere
-				renderSetup(world, done, X, win)
+				renderSetup(cam, world, done, X, win)
 			}()
-
 		}).Connect(X, win.Id, "p", true)
+
+	// Move forward
+	keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			go func(){  // stop previous run
+				done <- 1 
+			}()
+			go func(){
+				cam = NewCamera( cam.Origin.Add(NewVec3(0,0,-0.01)), NewVec3(0,0,-1), cam.Width)
+				renderSetup(cam, world, done, X, win)
+			}()
+		}).Connect(X, win.Id, "w", true)
+
+	// Move bacwkward
+	keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			go func(){ // stop previous run
+				done <- 1 
+			}()
+			go func(){
+				cam = NewCamera( cam.Origin.Add(NewVec3(0,0,0.01)), NewVec3(0,0,-1), cam.Width)
+				renderSetup(cam, world, done, X, win)
+			}()
+		}).Connect(X, win.Id, "s", true)
+
 	
 	if err != nil {
 		log.Fatal(err)
