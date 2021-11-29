@@ -31,7 +31,7 @@ _	"github.com/BurntSushi/xgbutil/xwindow"
 	"github.com/BurntSushi/xgbutil/keybind"
 	"github.com/BurntSushi/xgbutil/mousebind"
 	"github.com/BurntSushi/xgbutil/xevent"
-_	"github.com/BurntSushi/xgbutil/xgraphics" // painting
+	"github.com/BurntSushi/xgbutil/xgraphics" // painting
 _	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgbutil/xwindow"
 
@@ -46,7 +46,7 @@ func init() {
 	world = HittableList{}
 }
 
-func renderSetup(world HittableList, done chan int){
+func renderSetup(world HittableList, done chan int, X *xgbutil.XUtil, win *xwindow.Window){
 
 	// Enable this to see BVH culling in action. 5sec vs 28sec for []Hittablelist
 	// for i:=0; i<500; i++ {
@@ -57,19 +57,26 @@ func renderSetup(world HittableList, done chan int){
 	_ = bvh
 
 
-	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 2000)
-	samples := 16
+	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 400)
+	samples := 1
 	
 	start := time.Now()
-
-	img := Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
-
-	// saving png
 
 	path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		path = "img.png"
 	}
+	
+	img := Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
+
+	// Write image to pixmap and update content of the window
+	ximg := xgraphics.NewConvert(X, img)
+	ximg.XSurfaceSet(win.Id)
+	ximg.XDraw()
+	ximg.XPaint(win.Id)
+	win.Resize(cam.Width, cam.Height)
+	
+	// saving png
 	
 	fmt.Println("saving into:", path)
 
@@ -147,7 +154,9 @@ func main(){
 
 	
 	win := newWindow(X)
-	
+
+
+	// win := canvas.XShowExtra("Select area to capture", true)
 
 	err = mousebind.ButtonPressFun(
 		func(X *xgbutil.XUtil, e xevent.ButtonPressEvent) {
@@ -199,7 +208,7 @@ func main(){
 			go func(){
 				world.Add(Sphere{NewVec3(0,0,-1), 0.5})
 				world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
-				renderSetup(world, done)
+				renderSetup(world, done, X, win)
 			}()
 		}).Connect(X, win.Id, "bracketright", true)
 
@@ -217,7 +226,7 @@ func main(){
 			go func(){
 				world.Objects = nil // clear the slice
 				world.Add(Sphere{NewVec3(0,0,-1), 0.5}) // add only a single sphere
-				renderSetup(world, done)
+				renderSetup(world, done, X, win)
 			}()
 
 		}).Connect(X, win.Id, "p", true)
