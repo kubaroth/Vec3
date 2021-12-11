@@ -18,7 +18,7 @@ import (
 	. "github.com/kubaroth/Vec3"
 	"errors"
 	"fmt"
-	"image/png"
+_	"image/png"
 	"os"
 _	"sync"
 
@@ -59,9 +59,9 @@ func renderSetup(cam Camera, world HittableList, done chan int, X *xgbutil.XUtil
 	_ = bvh
 
 
-	samples := 1
+	samples := 16 // increase samples to see the problem of updating image during interrupted render
 	
-	start := time.Now()
+	start := time.Now(); _ = start
 
 	path := os.Getenv("HOME") + "/storage/downloads/img.png" // termux preview
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
@@ -79,19 +79,19 @@ func renderSetup(cam Camera, world HittableList, done chan int, X *xgbutil.XUtil
 	
 	// saving png
 	
-	fmt.Println("saving into:", path)
+	// fmt.Println("saving into:", path)
 
-	f, err := os.Create(path)
-	if err != nil {
-		panic(err)
-	}
+	// f, err := os.Create(path)
+	// if err != nil {
+	// 	panic(err)
+	// }
 	
-	defer f.Close()
-	if err = png.Encode(f, img); err != nil {
-		fmt.Printf("failed to encode: %v", err)
-	}
+	// defer f.Close()
+	// if err = png.Encode(f, img); err != nil {
+	// 	fmt.Printf("failed to encode: %v", err)
+	// }
 
-	fmt.Println("time", time.Since(start))
+	// fmt.Println("time", time.Since(start))
 }
 
 
@@ -236,9 +236,16 @@ func main(){
 			}()
 		}).Connect(X, win.Id, "p", true)
 
+	
 	// Move forward
-	keybind.KeyPressFun(
-		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+
+	// We should consider this method where we refrain from re-rendering on multiple
+	// key presses only trigger the render once the key is release
+	// NOTE: The 'release' is alson triggered on press!!!!
+	keybind.KeyReleaseFun( 
+		func(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {
+			fmt.Println("key W was released...")
+
 			go func(){  // stop previous run
 				done <- 1 
 			}()
@@ -246,8 +253,10 @@ func main(){
 				cam = NewCamera( cam.Origin.Add(NewVec3(0,0,-0.01)), NewVec3(0,0,-1), cam.Width)
 				renderSetup(cam, world, done, X, win)
 			}()
+			
 		}).Connect(X, win.Id, "w", true)
 
+	
 	// Move bacwkward
 	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {

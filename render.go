@@ -109,6 +109,8 @@ func RayColorBVH(r *Ray, world *BVH_node) Vec3 {
 	return sky
 }
 
+var img_prev image.RGBA
+
 // Inner sample render loop
 // The standard render function where samples are generated in the inner loop.
 // This has a simpler structure then the RenderSamples() but we cannot update
@@ -118,6 +120,10 @@ func Render(cam Camera, samples int, world *HittableList, bvh *BVH_node, done ch
 	upLeft := image.Point{0, 0}
 	lowRight := image.Point{cam.Width, cam.Height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
+	if len(img_prev.Pix) == len(img.Pix) { // ruse previously rendereed image this should help with interupted renders and avoid black regions
+		img = &img_prev
+	}
+
 
 	// drain the done channel before we start. This prevents cancelling immediately
 	// if there are multiple done signals queued up.
@@ -136,6 +142,7 @@ L:
 
 		case <-done: // send interrupt signal to  Render()
 			fmt.Println("Interrupt rendering")
+			// TODO: on interrupt we return paritially updated image
 			return img
 
 		default: // continue with standard inner loop
@@ -163,7 +170,7 @@ L:
 
 		} // end of select
 	}
-
+	img_prev = *img // update
 	return img
 }
 
