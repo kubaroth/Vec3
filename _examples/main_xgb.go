@@ -48,14 +48,23 @@ func init() {
 	world = HittableList{}
 }
 
-func renderSetup(cam Camera, world HittableList, done chan int, X *xgbutil.XUtil, win *xwindow.Window){
+type RenderSetup struct {
+	cam Camera
+	world HittableList
+	done chan int
+	X *xgbutil.XUtil
+	win *xwindow.Window
+}
+
+// func renderSetup(cam Camera, world HittableList, done chan int, X *xgbutil.XUtil, win *xwindow.Window){
+func renderSetup(parms RenderSetup){
 
 	// Enable this to see BVH culling in action. 5sec vs 28sec for []Hittablelist
 	// for i:=0; i<500; i++ {
 	// 	world.Add(Sphere{NewVec3(0,float32(i)/10., float32(i + 1)), 0.5})
 	// }
 	
-	bvh := NewBVHSplit(world.Objects,0,len(world.Objects))
+	bvh := NewBVHSplit(parms.world.Objects,0,len(parms.world.Objects))
 	_ = bvh
 
 
@@ -68,14 +77,18 @@ func renderSetup(cam Camera, world HittableList, done chan int, X *xgbutil.XUtil
 		path = "img.png"
 	}
 	
-	img := Render(cam, samples, &world, nil, done)  // pass bvh instead of nil to use BVH_node container
+	img := Render(parms.cam, samples, &parms.world, nil, parms.done)  // pass bvh instead of nil to use BVH_node container
 
+	// if len(img.Pix) == 0 { // interupted - don't paint
+	// 	return
+	// }
+	
 	// Write image to pixmap and update content of the window
-	ximg := xgraphics.NewConvert(X, img)
-	ximg.XSurfaceSet(win.Id)
+	ximg := xgraphics.NewConvert(parms.X, img)
+	ximg.XSurfaceSet(parms.win.Id)
 	ximg.XDraw()
-	ximg.XPaint(win.Id)
-	win.Resize(cam.Width, cam.Height)
+	ximg.XPaint(parms.win.Id)
+	parms.win.Resize(parms.cam.Width, parms.cam.Height)
 	
 	// saving png
 	
@@ -188,6 +201,10 @@ func main(){
 	//       Rethink how to rework camera struct to make update its state simpler
 
 
+	render_parms := RenderSetup{cam, world, done, X, win}
+	_ = render_parms
+	
+
 	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
 			log.Println("quiting...")
@@ -204,9 +221,9 @@ func main(){
 		}).Connect(X, win.Id, "Escape", true)
 
 	first_run := func(){
-		world.Add(Sphere{NewVec3(0,0,-1), 0.5})
-		world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
-		renderSetup(cam, world, done, X, win)
+		render_parms.world.Add(Sphere{NewVec3(0,0,-1), 0.5})
+		render_parms.world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
+		renderSetup(render_parms)
 	}
 	first_run()
 	
@@ -230,18 +247,22 @@ func main(){
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
 			fmt.Println("key P was pressed...")
 			go func(){
-				world.Objects = nil // clear the slice
-				world.Add(Sphere{NewVec3(0,0,-1), 0.5}) // add only a single sphere
-				renderSetup(cam, world, done, X, win)
+				render_parms.world.Objects = nil // clear the slice
+				render_parms.world.Add(Sphere{NewVec3(0,0,-1), 0.5}) // add only a single sphere
+				renderSetup(render_parms)
 			}()
 		}).Connect(X, win.Id, "p", true)
 
 	
 	// Move forward
+	keybind.KeyPressFun(
+		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
+			fmt.Println("key W was pressed...")
+		}).Connect(X, win.Id, "w", true)
 
 	// We should consider this method where we refrain from re-rendering on multiple
 	// key presses only trigger the render once the key is release
-	// NOTE: The 'release' is alson triggered on press!!!!
+	// NOTE: The 'release' is also triggered on press!!!!
 	keybind.KeyReleaseFun( 
 		func(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {
 			fmt.Println("key W was released...")
@@ -250,8 +271,8 @@ func main(){
 				done <- 1 
 			}()
 			go func(){
-				cam = NewCamera( cam.Origin.Add(NewVec3(0,0,-0.01)), NewVec3(0,0,-1), cam.Width)
-				renderSetup(cam, world, done, X, win)
+				render_parms.cam = NewCamera( render_parms.cam.Origin.Add(NewVec3(0,0,-0.01)), NewVec3(0,0,-1), render_parms.cam.Width)
+				renderSetup(render_parms)
 			}()
 			
 		}).Connect(X, win.Id, "w", true)
@@ -264,8 +285,8 @@ func main(){
 				done <- 1 
 			}()
 			go func(){
-				cam = NewCamera( cam.Origin.Add(NewVec3(0,0,0.01)), NewVec3(0,0,-1), cam.Width)
-				renderSetup(cam, world, done, X, win)
+				render_parms.cam = NewCamera( render_parms.cam.Origin.Add(NewVec3(0,0,0.01)), NewVec3(0,0,-1), render_parms.cam.Width)
+				renderSetup(render_parms)
 			}()
 		}).Connect(X, win.Id, "s", true)
 
