@@ -50,6 +50,7 @@ func init() {
 
 type RenderSetup struct {
 	cam Camera
+	samples int 
 	world HittableList
 	done chan int
 	X *xgbutil.XUtil
@@ -63,12 +64,11 @@ func renderSetup(parms RenderSetup){
 	// for i:=0; i<500; i++ {
 	// 	world.Add(Sphere{NewVec3(0,float32(i)/10., float32(i + 1)), 0.5})
 	// }
-	
+
+	// TODO: for now here but move it out into a separate step which
+	//       get executed only if we add new objects
 	bvh := NewBVHSplit(parms.world.Objects,0,len(parms.world.Objects))
 	_ = bvh
-
-
-	samples := 16 // increase samples to see the problem of updating image during interrupted render
 	
 	start := time.Now(); _ = start
 
@@ -77,12 +77,8 @@ func renderSetup(parms RenderSetup){
 		path = "img.png"
 	}
 	
-	img := Render(parms.cam, samples, &parms.world, nil, parms.done)  // pass bvh instead of nil to use BVH_node container
+	img := Render(parms.cam, parms.samples, &parms.world, nil, parms.done)  // pass bvh instead of nil to use BVH_node container
 
-	// if len(img.Pix) == 0 { // interupted - don't paint
-	// 	return
-	// }
-	
 	// Write image to pixmap and update content of the window
 	ximg := xgraphics.NewConvert(parms.X, img)
 	ximg.XSurfaceSet(parms.win.Id)
@@ -90,21 +86,7 @@ func renderSetup(parms RenderSetup){
 	ximg.XPaint(parms.win.Id)
 	parms.win.Resize(parms.cam.Width, parms.cam.Height)
 	
-	// saving png
-	
-	// fmt.Println("saving into:", path)
-
-	// f, err := os.Create(path)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	
-	// defer f.Close()
-	// if err = png.Encode(f, img); err != nil {
-	// 	fmt.Printf("failed to encode: %v", err)
-	// }
-
-	// fmt.Println("time", time.Since(start))
+	fmt.Println("time", time.Since(start))
 }
 
 
@@ -197,13 +179,8 @@ func main(){
 
 	done := make(chan int)
 	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 400)
-	// TODO: Include into camera samples
-	//       Rethink how to rework camera struct to make update its state simpler
 
-
-	render_parms := RenderSetup{cam, world, done, X, win}
-	_ = render_parms
-	
+	render_parms := RenderSetup{cam, 2 /*samples*/, world, done, X, win}
 
 	keybind.KeyPressFun(
 		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
@@ -255,16 +232,8 @@ func main(){
 
 	
 	// Move forward
-	keybind.KeyPressFun(
-		func(X *xgbutil.XUtil, e xevent.KeyPressEvent) {
-			fmt.Println("key W was pressed...")
-		}).Connect(X, win.Id, "w", true)
-
-	// We should consider this method where we refrain from re-rendering on multiple
-	// key presses only trigger the render once the key is release
-	// NOTE: The 'release' is also triggered on press!!!!
 	keybind.KeyReleaseFun( 
-		func(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {
+		func(X *xgbutil.XUtil, e xevent.KeyReleaseEvent) {  // NOTE: The 'release' is also triggered on press and not release
 			fmt.Println("key W was released...")
 
 			go func(){  // stop previous run

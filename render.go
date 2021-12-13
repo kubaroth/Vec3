@@ -109,6 +109,7 @@ func RayColorBVH(r *Ray, world *BVH_node) Vec3 {
 	return sky
 }
 
+// helper to store previous results in case rendering gets interrupted
 var img_prev image.RGBA
 
 // Inner sample render loop
@@ -121,8 +122,6 @@ func Render(cam Camera, samples int, world *HittableList, bvh *BVH_node, done ch
 	lowRight := image.Point{cam.Width, cam.Height}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
-	// img_null := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{0, 0}})
-	
 	if len(img_prev.Pix) == len(img.Pix) { // ruse previously rendereed image this should help with interupted renders and avoid black regions
 		img = &img_prev
 	}
@@ -138,43 +137,6 @@ L:
 			break L
 		}
 	}
-
-
-	// for j := 0; j <= cam.Height; j++ {
-	// 	select {
-
-	// 	case <-done: // send interrupt signal to  Render()
-	// 		fmt.Println("Interrupt rendering")
-	// 		// TODO: on interrupt we return paritially updated image
-	// 		return img
-	// 		// return img_null
-
-	// 	default: // continue with standard inner loop
-
-	// 	for i := 0; i < cam.Width; i++ {
-
-	// 		pixel_color := NewVec3(0,0,0); _ = pixel_color
-	// 		for s:=0; s < samples; s++ {
-	// 			rr := RandFloat()
-	// 			u := (float32(i) + rr) / float32(cam.Width-1)
-	// 			v := (float32(j) + rr) / float32(cam.Height-1)
-	// 			_, _ = u, v
-	// 			ray := cam.GetRay(u,v)
-
-	// 			if bvh != nil {
-	// 				pixel_color = pixel_color.Add(RayColorBVH(&ray, bvh)) // BVH scene
-	// 			} else {
-	// 				pixel_color = pixel_color.Add(RayColorArray(&ray, *world))  // flat list scene
-	// 			}
-	// 		}
-	// 		px_cd := Write_color(pixel_color, samples)
-	// 		img.SetRGBA(i, cam.Height-j, px_cd)
-
-	// 	}
-
-	// 	} // end of select
-	// }
-
 
 
 	for j := 0; j <= cam.Height; j++ {
