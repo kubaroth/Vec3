@@ -320,7 +320,7 @@ type Sphere struct {
 //      --a---       -----b-----   ------c--------
 func (s Sphere) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
 	oc := r.Origin().Subtr(s.Center)
-	a := r.Direction().Dot(r.Direction())
+	a := r.Direction().Dot(r.Direction())  // square of length of the vector
 	half_b := oc.Dot(r.Direction())
 	c := oc.Dot(oc) - (s.Radius * s.Radius)
 	discriminant := float64(half_b * half_b - a*c) // finding roots
@@ -350,6 +350,55 @@ func (s Sphere) BBox(out_aabb *AABB) bool  {
 	return true
 }
 
+
+type Cylinder struct {
+	Center Vec3
+	Radius float32
+	Height float32
+}
+
+func (cyl Cylinder) Hit(r *Ray, t_min, t_max float32, rec *HitRecord) bool {
+
+	cylinder_pos := cyl.Center // NewVec3(0,0,-1)
+	cylinder_rot := NewVec3(0,1,0)
+	ray := Ray{Orig: r.Orig}
+	ray.Dir = r.Direction().Cross(cylinder_rot)
+	co := ray.Orig.Subtr(cylinder_pos)
+	a := ray.Dir.Dot(ray.Dir)
+	b := 2 * ray.Dir.Dot( co.Cross(cylinder_rot) )
+	c := co.Cross(cylinder_rot).Dot( co.Cross(cylinder_rot) ) - cyl.Radius * cyl.Radius
+	d := b * b - 4 * c * a
+	if d < 0{
+		return false
+	}
+
+	t1 := ( float64(-b) - math.Sqrt(float64(d)) /  (2*float64(a))) 
+	t2 := ( float64(-b) + math.Sqrt(float64(d)) /  (2*float64(a))) 
+
+	if t2 < 0{
+		return false
+	}
+
+	var t float64
+	if t1 > 0 {
+		t = t1
+	} else {
+		t = t2
+	}
+
+	// at this point we have infinite height - need to cut at hight
+	v := r.Origin().At(1) + float32(t) * r.Direction().At(1)
+	if ((v > cylinder_pos.At(1) - cyl.Height/2.0) && v <= cylinder_pos.At(1) + cyl.Height/2.0){
+		return true
+	} else {
+		return false
+	}
+	
+}
+
+func (c Cylinder) BBox(out_aabb *AABB) bool {
+	return true // TODO: for now always return true
+}
 
 type XYRect struct{
 	X0, X1, Y0, Y1, K float32

@@ -198,8 +198,10 @@ func main(){
 		}).Connect(X, win.Id, "Escape", true)
 
 	first_run := func(){
-		render_parms.world.Add(Sphere{NewVec3(0,0,-1), 0.5})
+		render_parms.world.Add(Sphere{NewVec3(0,0,-1), 0.2})
+		render_parms.world.Add(Cylinder{Center:NewVec3(0,1,-1), Radius:0.1, Height:1.0})
 		render_parms.world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
+
 		renderSetup(render_parms)
 	}
 	first_run()

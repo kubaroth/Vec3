@@ -38,9 +38,10 @@ func main() {
 	}
 
 	world := HittableList{}
-	world.Add(Sphere{NewVec3(0,0,-1), 0.5})
-	world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
 	_ = world
+	world.Add(Sphere{NewVec3(0,0,-1), 0.2})
+	world.Add(Cylinder{Center:NewVec3(0,1,-1), Radius:0.1, Height:1.0})
+	world.Add(Sphere{NewVec3(0,-100.5,-1), 100.0})
 
 	// Enable this to see BVH culling in action. 5sec vs 28sec for []Hittablelist
 	// for i:=0; i<500; i++ {
@@ -50,7 +51,7 @@ func main() {
 	bvh := NewBVHSplit(world.Objects,0,len(world.Objects))
 	_ = bvh
 
-	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 2000)
+	cam := NewCamera(NewVec3(0,0,0), NewVec3(0,0,-1), 200)
 	samples := 16
 	
 	start := time.Now()
